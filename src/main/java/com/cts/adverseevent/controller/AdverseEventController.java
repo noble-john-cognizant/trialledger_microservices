@@ -4,9 +4,11 @@ import com.cts.adverseevent.dto.AdverseEventRequestDto;
 import com.cts.adverseevent.dto.AdverseEventResponseDto;
 import com.cts.adverseevent.dto.ApiResponseDto;
 import com.cts.adverseevent.service.AdverseEventService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,38 +24,45 @@ public class AdverseEventController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
     public ResponseEntity<List<AdverseEventResponseDto>> getAllAE() {
         return ResponseEntity.ok(adverseEventService.getAllAE());
     }
 
     @GetMapping("/{aeId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
     public ResponseEntity<AdverseEventResponseDto> getAEById(@PathVariable Long aeId) {
         return ResponseEntity.ok(adverseEventService.getAEById(aeId));
     }
 
     @GetMapping("/study/{studyId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
     public ResponseEntity<List<AdverseEventResponseDto>> getByStudy(@PathVariable Long studyId) {
         return ResponseEntity.ok(adverseEventService.getAEByStudy(studyId));
     }
 
     @GetMapping("/participant/{participantId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
     public ResponseEntity<List<AdverseEventResponseDto>> getByParticipant(@PathVariable Long participantId) {
         return ResponseEntity.ok(adverseEventService.getAEByParticipant(participantId));
     }
 
     @PostMapping
-    public ResponseEntity<AdverseEventResponseDto> createAE(@Valid @RequestBody AdverseEventRequestDto dto) {
+    @PreAuthorize("hasAnyRole('PI','COORDINATOR','TECHNICIAN')")
+    public ResponseEntity<AdverseEventResponseDto> createAE(@Valid @RequestBody AdverseEventRequestDto dto) throws JsonProcessingException {
         return ResponseEntity.status(HttpStatus.CREATED).body(adverseEventService.createAE(dto));
     }
 
     @PatchMapping("/{aeId}/status")
+    @PreAuthorize("hasAnyRole('PI','COMPLIANCE')")
     public ResponseEntity<AdverseEventResponseDto> updateStatus(@PathVariable Long aeId,
-                                                                @RequestParam String status) {
+                                                                @RequestParam String status) throws JsonProcessingException {
         return ResponseEntity.ok(adverseEventService.updateStatus(aeId, status));
     }
 
     @DeleteMapping("/{aeId}")
-    public ResponseEntity<String> deleteAE(@PathVariable Long aeId) {
+    @PreAuthorize("hasAnyRole('PI','COORDINATOR','TECHNICIAN')")
+    public ResponseEntity<String> deleteAE(@PathVariable Long aeId) throws JsonProcessingException {
         return ResponseEntity.ok(adverseEventService.deleteAE(aeId));
     }
 
@@ -63,6 +72,7 @@ public class AdverseEventController {
      * instead of failing the whole request.
      */
     @GetMapping("/{aeId}/full")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
     public ResponseEntity<ApiResponseDto> getFullAdverseEvent(@PathVariable Long aeId) {
         return ResponseEntity.ok(adverseEventService.getFullAdverseEvent(aeId));
     }

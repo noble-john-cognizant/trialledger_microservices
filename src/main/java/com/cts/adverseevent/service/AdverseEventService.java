@@ -1,6 +1,7 @@
 package com.cts.adverseevent.service;
 
 import com.cts.adverseevent.client.ParticipantClient;
+import com.cts.adverseevent.client.ProvenanceClient;
 import com.cts.adverseevent.client.StudyClient;
 import com.cts.adverseevent.dto.*;
 import com.cts.adverseevent.entity.AEFollowUp;
@@ -11,36 +12,31 @@ import com.cts.adverseevent.mapper.AdverseEventMapper;
 import com.cts.adverseevent.model.AEStatus;
 import com.cts.adverseevent.repository.AEFollowUpRepository;
 import com.cts.adverseevent.repository.AdverseEventRepository;
+import com.cts.adverseevent.util.UserUtil;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
+@RequiredArgsConstructor
 public class AdverseEventService {
 
     private final AdverseEventRepository adverseEventRepository;
     private final AEFollowUpRepository aeFollowUpRepository;
     private final AdverseEventMapper aeMapper;
     private final AEFollowUpMapper followUpMapper;
-
+    private final ProvenanceClient provenanceClient;
     private final StudyClient studyClient;
     private final ParticipantClient participantClient;
 
-    public AdverseEventService(AdverseEventRepository adverseEventRepository,
-                               AEFollowUpRepository aeFollowUpRepository,
-                               AdverseEventMapper aeMapper,
-                               AEFollowUpMapper followUpMapper,
-                               StudyClient studyClient,
-                               ParticipantClient participantClient) {
-        this.adverseEventRepository = adverseEventRepository;
-        this.aeFollowUpRepository = aeFollowUpRepository;
-        this.aeMapper = aeMapper;
-        this.followUpMapper = followUpMapper;
-        this.studyClient = studyClient;
-        this.participantClient = participantClient;
-    }
 
     public List<AdverseEventResponseDto> getAllAE() {
         return adverseEventRepository.findByIsDeletedFalse()
@@ -69,22 +65,46 @@ public class AdverseEventService {
                 .collect(Collectors.toList());
     }
 
-    public AdverseEventResponseDto createAE(AdverseEventRequestDto dto) {
+    public AdverseEventResponseDto createAE(AdverseEventRequestDto dto) throws JsonProcessingException {
         AdverseEvent ae = aeMapper.toEntity(dto);
         AdverseEvent saved = adverseEventRepository.save(ae);
-        return aeMapper.toResponse(saved);
+        AdverseEventResponseDto response = aeMapper.toResponse(saved);
+
+        // Record in provenance table
+        Map<String, Object> map = new HashMap<>();
+        map.put("aeId", saved.getId());
+        map.put("studyId", saved.getStudyId());
+        map.put("severity", saved.getSeverity().name());
+        map.put("reportedBy", saved.getReportedById());
+        map.put("status", saved.getStatus().name());
+        ObjectMapper mapper = new ObjectMapper();
+        String metadata = mapper.writeValueAsString(map);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CREATE_AE", "adverse_event", UserUtil.getCurrentUserId(), saved.getId(), metadata);
+        provenanceClient.recordProvenanceData(requestDTO);
+        return response;
     }
 
-    public AdverseEventResponseDto updateStatus(Long aeId, String status) {
+    public AdverseEventResponseDto updateStatus(Long aeId, String status) throws JsonProcessingException {
         AdverseEvent ae = adverseEventRepository.findByIdAndIsDeletedFalse(aeId)
                 .orElseThrow(() -> new AdverseEventNotFoundException(aeId));
         ae.setStatus(AEStatus.valueOf(status.toUpperCase()));
         AdverseEvent saved = adverseEventRepository.save(ae);
-        return aeMapper.toResponse(saved);
+        AdverseEventResponseDto response = aeMapper.toResponse(saved);
+
+        // Record in provenance table
+        Map<String, Object> map = new HashMap<>();
+        map.put("aeId", ae.getId());
+        map.put("status", ae.getStatus());
+        ObjectMapper mapper = new ObjectMapper();
+        String metadata = mapper.writeValueAsString(map);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("UPDATE_AE_STATUS", "adverse_event", UserUtil.getCurrentUserId(), saved.getId(), metadata);
+        provenanceClient.recordProvenanceData(requestDTO);
+
+        return response;
     }
 
     @Transactional
-    public String deleteAE(Long aeId) {
+    public String deleteAE(Long aeId) throws JsonProcessingException {
         AdverseEvent ae = adverseEventRepository.findByIdAndIsDeletedFalse(aeId)
                 .orElseThrow(() -> new AdverseEventNotFoundException(aeId));
 
@@ -95,6 +115,15 @@ public class AdverseEventService {
 
         ae.setIsDeleted(true);
         adverseEventRepository.save(ae);
+
+        // Record in provenance table
+        Map<String, Object> map = new HashMap<>();
+        map.put("aeId", ae.getId());
+        map.put("status", ae.getStatus());
+        ObjectMapper mapper = new ObjectMapper();
+        String metadata = mapper.writeValueAsString(map);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("DELETE_AE", "adverse_event", UserUtil.getCurrentUserId(), ae.getId(), metadata);
+        provenanceClient.recordProvenanceData(requestDTO);
 
         return "Adverse Event with ID " + aeId + " soft-deleted along with "
                 + followUps.size() + " follow-up(s)";
