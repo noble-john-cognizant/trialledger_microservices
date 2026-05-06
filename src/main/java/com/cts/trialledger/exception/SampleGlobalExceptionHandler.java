@@ -1,5 +1,6 @@
 package com.cts.trialledger.exception;
 
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -50,6 +51,14 @@ public class SampleGlobalExceptionHandler {
         body.put("error", status.getReasonPhrase());
         body.put("message", message);
         return new ResponseEntity<>(body, status);
+    }
+
+    @ExceptionHandler(FeignException.NotFound.class)
+    public ResponseEntity<Map<String, Object>> handleFeignNotFound(
+            FeignException.NotFound ex) {
+
+        return buildErrorResponse(HttpStatus.NOT_FOUND,
+                "Resource not found in upstream service: " + ex.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
