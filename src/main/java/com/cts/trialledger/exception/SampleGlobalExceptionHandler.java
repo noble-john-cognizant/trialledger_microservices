@@ -79,8 +79,6 @@ public class SampleGlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleJsonParseException(
             HttpMessageNotReadableException ex) {
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST,
-                ex.getMostSpecificCause().getMessage()
-        );
+        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMostSpecificCause().getMessage());
     }
 }
