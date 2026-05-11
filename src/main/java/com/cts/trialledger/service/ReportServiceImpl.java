@@ -4,12 +4,11 @@ import com.cts.trialledger.client.AdverseEventClient;
 import com.cts.trialledger.client.ConsentClient;
 import com.cts.trialledger.client.ProvenanceClient;
 import com.cts.trialledger.client.SampleClient;
-import com.cts.trialledger.dto.AdverseEventResponseDTO;
-import com.cts.trialledger.dto.ConsentResponseDTO;
-import com.cts.trialledger.dto.ProvenanceDTO;
-import com.cts.trialledger.dto.SampleResponseDTO;
-import com.cts.trialledger.dto.ReportRequestDTO;
-import com.cts.trialledger.dto.ReportResponseDTO;
+import com.cts.trialledger.client.dto.AdverseEventStatsDTO;
+import com.cts.trialledger.client.dto.EnrollmentStatsDTO;
+import com.cts.trialledger.client.dto.ProvenanceStatsDTO;
+import com.cts.trialledger.client.dto.SampleStatsDTO;
+import com.cts.trialledger.dto.*;
 import com.cts.trialledger.entity.Report;
 import com.cts.trialledger.exception.ReportNotFoundException;
 import com.cts.trialledger.exception.ResourceNotFoundException;
@@ -63,7 +62,7 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private String buildEnrollmentMetrics(Long studyId) {
-        ConsentResponseDTO stats = consentClient.getEnrollmentStats(studyId);
+        EnrollmentStatsDTO stats = consentClient.getEnrollmentStats(studyId);
         Map<String, Object> metrics = Map.of(
                 "participants", Map.of(
                         "total",     stats.getTotalParticipants(),
@@ -74,22 +73,24 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private String buildSampleMetrics(Long studyId) {
-        SampleResponseDTO stats = sampleClient.getSampleStats(studyId);
+        SampleStatsDTO stats = sampleClient.getSampleStats(studyId);
         Map<String, Object> metrics = Map.of(
                 "samples", Map.of(
                         "total", stats.getTotalSamples(),
                         "byStatus", Map.of(
-                                "COLLECTED",   stats.getCollectedCount(),
+                                "COLLECTED", stats.getCollectedCount(),
                                 "IN_ANALYSIS", stats.getInAnalysisCount(),
-                                "COMPLETED",   stats.getCompletedCount()
-                        )
+                                "COMPLETED", stats.getCompletedCount()
+                        ),
+                        "custodyEvents", stats.getCustodyEventCount(),
+                        "assayRuns", stats.getAssayRunCount()
                 )
         );
         return toJson(metrics);
     }
 
     private String buildAdverseEventMetrics(Long studyId) {
-        AdverseEventResponseDTO stats = adverseEventClient.getAdverseEventStats(studyId);
+        AdverseEventStatsDTO stats = adverseEventClient.getAdverseEventStats(studyId);
         Map<String, Object> metrics = Map.of(
                 "adverseEvents", Map.of(
                         "total", stats.getTotalEvents(),
@@ -104,8 +105,8 @@ public class ReportServiceImpl implements ReportService {
     }
 
     private String buildProvenanceMetrics(Long studyId) {
-        SampleResponseDTO sampleStats = sampleClient.getSampleStats(studyId);
-        ProvenanceDTO provenanceStats = provenanceClient.getProvenanceStats(studyId);
+        SampleStatsDTO sampleStats = sampleClient.getSampleStats(studyId);
+        ProvenanceStatsDTO provenanceStats = provenanceClient.getProvenanceStats(studyId);
         Map<String, Object> metrics = Map.of(
                 "provenance", Map.of(
                         "custodyEvents", sampleStats.getCustodyEventCount(),

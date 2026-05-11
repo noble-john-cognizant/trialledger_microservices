@@ -1,4 +1,4 @@
-package com.cts.trialledger.dto;
+package com.cts.trialledger.client.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

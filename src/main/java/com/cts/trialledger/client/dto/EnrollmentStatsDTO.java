@@ -1,4 +1,4 @@
-package com.cts.trialledger.dto;
+package com.cts.trialledger.client.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,9 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ProvenanceStatsDTO {
+public class EnrollmentStatsDTO {
     private Long studyId;
-    private Long provenanceRecordCount;
+    private Long totalParticipants;
+    private Long enrolledCount;
+    private Long withdrawnCount;
 }
