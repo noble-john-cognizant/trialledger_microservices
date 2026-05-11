@@ -10,5 +10,4 @@ public interface ProvenanceClient {
 
     @GetMapping("/stats/{studyId}")
     ProvenanceDTO getProvenanceStats(@PathVariable("studyId") Long studyId);
-
 }

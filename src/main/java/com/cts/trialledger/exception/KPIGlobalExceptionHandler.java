@@ -1,29 +1,17 @@
 package com.cts.trialledger.exception;
 
-import com.cts.trialledger.exception.AssayRunNotFoundException;
-import com.cts.trialledger.exception.SampleNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
 public class KPIGlobalExceptionHandler {
-
-    @ExceptionHandler(SampleNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleSampleNotFound(SampleNotFoundException ex) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
-
-    @ExceptionHandler(AssayRunNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleAssayRunNotFound(AssayRunNotFoundException ex) {
-        return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
-    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationErrors(MethodArgumentNotValidException ex) {
@@ -58,6 +46,14 @@ public class KPIGlobalExceptionHandler {
             IllegalArgumentException ex) {
 
         return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidEnum(
+            HttpMessageNotReadableException ex) {
+
+        return buildErrorResponse(HttpStatus.BAD_REQUEST,
+                "Invalid value provided. " + ex.getMostSpecificCause().getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)

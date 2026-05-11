@@ -96,8 +96,7 @@ public class ReportServiceImpl implements ReportService {
                         "bySeverity", Map.of(
                                 "MILD", stats.getMildCount(),
                                 "MODERATE", stats.getModerateCount(),
-                                "SEVERE", stats.getSevereCount(),
-                                "LIFE_THREATENING", stats.getLifeThreatenigCount()
+                                "SEVERE", stats.getSevereCount()
                         )
                 )
         );
