@@ -100,9 +100,7 @@ public class AdverseEventService {
                 + followUps.size() + " follow-up(s)";
     }
 
-    /**
-     * Aggregation endpoint: returns AE + follow-ups + study (Feign) + participant (Feign).
-     */
+
     public ApiResponseDto getFullAdverseEvent(Long aeId) {
         AdverseEvent ae = adverseEventRepository.findByIdAndIsDeletedFalse(aeId)
                 .orElseThrow(() -> new AdverseEventNotFoundException(aeId));
