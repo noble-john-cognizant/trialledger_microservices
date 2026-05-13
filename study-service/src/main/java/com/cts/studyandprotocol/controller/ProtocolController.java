@@ -56,6 +56,13 @@ public class ProtocolController {
         return ResponseEntity.ok(protocolService.updateProtocolStatus(protocolId, protocolStatus));
     }
 
+    @PatchMapping("/protocols/{protocolId}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COMPLIANCE')")
+    public ResponseEntity<String> approveProtocol(@PathVariable Long protocolId)
+            throws JsonProcessingException {
+        return ResponseEntity.ok(protocolService.approveProtocol(protocolId));
+    }
+
     @DeleteMapping("/{studyId}/protocols/{protocolId}")
     @PreAuthorize("hasAnyRole('ADMIN','PI','COMPLIANCE')")
     public ResponseEntity<String> deleteProtocol(

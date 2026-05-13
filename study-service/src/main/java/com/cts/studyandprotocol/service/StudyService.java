@@ -13,6 +13,7 @@ import com.cts.studyandprotocol.repository.StudyRepository;
 import com.cts.studyandprotocol.util.UserUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
@@ -63,6 +64,7 @@ public class StudyService {
         map.put("protocolNumber", saved.getProtocolNumber());
         map.put("status", saved.getStatus());
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         String metadata = mapper.writeValueAsString(map);
         ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CREATE_STUDY", "study", UserUtil.getCurrentUserId(), saved.getStudyId(), metadata);
         provenanceClient.recordProvenanceData(requestDTO);
@@ -88,10 +90,11 @@ public class StudyService {
         map.put("softDeleted", true);
         map.put("status", study.getStatus());
         ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new JavaTimeModule());
         String metadata = mapper.writeValueAsString(map);
         ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CREATE_STUDY", "study", UserUtil.getCurrentUserId(), study.getStudyId(), metadata);
         provenanceClient.recordProvenanceData(requestDTO);
 
-        return "Study with ID " + studyId + " soft-deleted along with " + protocols.size() + " protocol(s)";
+        return "Study with ID " + studyId + " deleted along with " + protocols.size() + " protocol(s)";
     }
 }

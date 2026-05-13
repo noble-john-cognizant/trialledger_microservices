@@ -32,6 +32,7 @@ public class StudyController {
         return ResponseEntity.ok(studyService.getStudyById(studyId));
     }
 
+
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','PI')")
     public ResponseEntity<StudyResponseDto> createStudy(@Valid @RequestBody StudyRequestDto dto) throws JsonProcessingException {
