@@ -16,6 +16,10 @@ public class ProtocolMapper {
         protocol.setVersionNumber(dto.getVersionNumber());
         protocol.setDocumentUrl(dto.getDocumentUrl());
         protocol.setEffectiveDate(dto.getEffectiveDate());
+<<<<<<< HEAD
+=======
+        protocol.setApprovedById(dto.getApprovedById());
+>>>>>>> 09b0807c705d15c7b53b6bb00bf12bc6fa4e2ec9
         protocol.setStatus(ProtocolStatus.DRAFT);
         protocol.setIsDeleted(false);
         return protocol;
