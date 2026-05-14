@@ -20,9 +20,8 @@ public class ProtocolVersionRequestDto {
     @NotNull(message = "Effective date is required")
     private LocalDate effectiveDate;
 
-<<<<<<< HEAD
-=======
+
     @NotNull(message = "Approved By (user id) is required")
     private Long approvedById;
->>>>>>> 09b0807c705d15c7b53b6bb00bf12bc6fa4e2ec9
 }
+
