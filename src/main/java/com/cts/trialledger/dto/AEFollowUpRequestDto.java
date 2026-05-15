@@ -1,0 +1,19 @@
+package com.cts.trialledger.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class AEFollowUpRequestDto {
+
+    @NotBlank(message = "Action taken is required")
+    private String actionTaken;
+
+    @NotNull(message = "Performed By (user id) is required")
+    private Long performedById;
+
+    private String notes;
+}
