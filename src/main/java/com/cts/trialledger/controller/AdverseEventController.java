@@ -52,9 +52,9 @@ public class AdverseEventController {
     @PostMapping
     @PreAuthorize("hasAnyRole('PI','COORDINATOR','TECHNICIAN')")
     public ResponseEntity<ApiMessage> createAE(@Valid @RequestBody AdverseEventRequestDto dto) throws JsonProcessingException {
-        adverseEventService.createAE(dto);
+        AdverseEventResponseDto created = adverseEventService.createAE(dto);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiMessage("Adverse event created successfully"));
+                .body(new ApiMessage("Adverse event created successfully with ID: " + created.getAeId()));
     }
 
     @PatchMapping("/{aeId}/status")

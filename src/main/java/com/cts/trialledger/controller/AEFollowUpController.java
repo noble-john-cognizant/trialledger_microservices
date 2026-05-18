@@ -27,9 +27,9 @@ public class AEFollowUpController {
     @PreAuthorize("hasAnyRole('PI','COORDINATOR','COMPLIANCE')")
     public ResponseEntity<ApiMessage> addFollowUp(@PathVariable Long aeId,
                                                   @Valid @RequestBody AEFollowUpRequestDto dto) throws JsonProcessingException {
-        followUpService.addFollowUp(aeId, dto);
+        AEFollowUpResponseDto created = followUpService.addFollowUp(aeId, dto);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiMessage("Follow-up added successfully"));
+                .body(new ApiMessage("Follow-up added successfully with ID: " + created.getFollowUpId()));
     }
 
     @GetMapping("/{aeId}/follow-ups")
