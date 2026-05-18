@@ -1,5 +1,7 @@
 package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.ProvenanceClient;
+import com.cts.trialledger.client.dto.ProvenanceRequestDTO;
 import com.cts.trialledger.dto.KPIRequestDTO;
 import com.cts.trialledger.dto.KPIResponseDTO;
 import com.cts.trialledger.entity.KPI;
@@ -9,10 +11,14 @@ import com.cts.trialledger.mapper.KPIMapper;
 import com.cts.trialledger.repository.KPIRepository;
 //import com.cts.trialledger.util.AuthValidator;
 //import com.cts.trialledger.util.ProvenanceRecordUtil;
+import com.cts.trialledger.util.UserUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -20,11 +26,10 @@ public class KPIServiceImpl implements KPIService {
 
     private final KPIRepository kpiRepository;
     private final KPIMapper kpiMapper;
-//    private final AuditService auditService;
-//    private final ProvenanceRecordUtil provenanceRecordUtil;
+    private final ProvenanceClient provenanceClient;
 
     @Override
-    public KPIResponseDTO createKPI(KPIRequestDTO dto) {
+    public KPIResponseDTO createKPI(KPIRequestDTO dto) throws JsonProcessingException {
         KPI kpi = KPI.builder()
                 .name(dto.getName())
                 .definition(dto.getDefinition())
@@ -34,55 +39,36 @@ public class KPIServiceImpl implements KPIService {
                 .build();
         KPI saved = kpiRepository.save(kpi);
 
-//        // Audit
-//        auditService.storeAudit("CREATE_KPI", "kpi", "User ID: " + AuthValidator.getCurrentUserId() + " created kpi of id: " + saved.getKpiId());
-//        //Record
-//        Map<String, Object> map = Map.of("name", saved.getName(),
-//                "targetValue", saved.getTarget(),
-//                "currentValue", saved.getCurrentValue()
-//        );
-//        provenanceRecordUtil.saveProvenanceRecord("CREATE_KPI", "kpi", saved.getKpiId(), map);
+        //Record
+        Map<String, Object> map = Map.of("name", saved.getName(), "targetValue", saved.getTarget(), "currentValue", saved.getCurrentValue());
+        ObjectMapper mapper = new ObjectMapper();
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CREATE_KPI", "kpi", UserUtil.getCurrentUserId(), saved.getKpiId(), mapper.writeValueAsString(map));
+        provenanceClient.recordProvenanceData(requestDTO);
 
         return kpiMapper.toResponse(saved);
     }
 
     @Override
     public KPIResponseDTO getKPIById(Long id) {
-        KPIResponseDTO response = kpiMapper.toResponse(
-                kpiRepository.findById(id)
-                        .orElseThrow(() -> new KPINotFoundException(id))
-        );
-
-//        // Audit
-//        auditService.storeAudit("VIEW_KPI", "kpi", "User ID: " + AuthValidator.getCurrentUserId() + " viewed kpi by id: " + response.getKpiId());
+        KPIResponseDTO response = kpiMapper.toResponse(kpiRepository.findById(id).orElseThrow(() -> new KPINotFoundException(id)));
 
         return response;
     }
 
     @Override
     public List<KPIResponseDTO> getAllKPIs() {
-        List<KPIResponseDTO> response = kpiRepository.findAll().stream()
-                .map(kpiMapper::toResponse)
-                .toList();
-
-        // Audit
-//        auditService.storeAudit("VIEW_KPI", "kpi", "User ID: " + AuthValidator.getCurrentUserId() + " viewed all KPIs");
+        List<KPIResponseDTO> response = kpiRepository.findAll().stream().map(kpiMapper::toResponse).toList();
 
         return response;
     }
 
     @Override
     public List<KPIResponseDTO> getKPIsByPeriod(String period) {
-        List<KPIResponseDTO> kpis = kpiRepository.findByReportingPeriod(period)
-                .stream().map(kpiMapper::toResponse).toList();
+        List<KPIResponseDTO> kpis = kpiRepository.findByReportingPeriod(period).stream().map(kpiMapper::toResponse).toList();
 
         if (kpis.isEmpty()) {
             throw new ResourceNotFoundException("No KPIs found for reporting period: " + period);
         }
-
-        // Audit
-//        auditService.storeAudit("VIEW_KPI", "kpi", "User ID: " + AuthValidator.getCurrentUserId() + " viewed kpi by reporting period: " + period);
-
         return kpis;
     }
 }

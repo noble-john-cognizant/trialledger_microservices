@@ -14,14 +14,14 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ReportRequestDTO {
 
-    @NotNull(message = "studyId is required")
+    @NotNull(message = "StudyId is required")
     private Long studyId;
 
-    @NotNull(message = "scope is required")
+    @NotNull(message = "Scope is required")
     private ReportScope scope;
 
     private String parametersJson;
 
-    @NotBlank(message = "reportingPeriod is required")
+    @NotBlank(message = "ReportingPeriod is required")
     private String reportingPeriod;
 }

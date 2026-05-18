@@ -5,7 +5,7 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "adverse-event-service", path = "/api/adverse-events")
+@FeignClient(name = "ADVERSE-EVENTS-SERVICE", path = "/api/adverse-events")
 public interface AdverseEventClient {
 
     @GetMapping("/stats/{studyId}")

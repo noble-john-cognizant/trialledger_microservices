@@ -8,7 +8,8 @@ import com.cts.trialledger.client.dto.AdverseEventStatsDTO;
 import com.cts.trialledger.client.dto.EnrollmentStatsDTO;
 import com.cts.trialledger.client.dto.ProvenanceStatsDTO;
 import com.cts.trialledger.client.dto.SampleStatsDTO;
-import com.cts.trialledger.dto.*;
+import com.cts.trialledger.dto.ReportRequestDTO;
+import com.cts.trialledger.dto.ReportResponseDTO;
 import com.cts.trialledger.entity.Report;
 import com.cts.trialledger.exception.ReportNotFoundException;
 import com.cts.trialledger.exception.ResourceNotFoundException;
@@ -18,11 +19,20 @@ import com.cts.trialledger.repository.ReportRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ReportServiceImpl implements ReportService {
@@ -34,6 +44,9 @@ public class ReportServiceImpl implements ReportService {
     private final ProvenanceClient provenanceClient;
     private final ReportMapper reportMapper;
 
+    @Value("${report.storage-path:./reports}")
+    private String storagePath;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -42,8 +55,8 @@ public class ReportServiceImpl implements ReportService {
         String metricsJson = switch (dto.getScope()) {
 
             case ENROLLMENT -> buildEnrollmentMetrics(dto.getStudyId());
-            case SAMPLES    -> buildSampleMetrics(dto.getStudyId());
-            case AE         -> buildAdverseEventMetrics(dto.getStudyId());
+            case SAMPLES -> buildSampleMetrics(dto.getStudyId());
+            case AE -> buildAdverseEventMetrics(dto.getStudyId());
             case PROVENANCE -> buildProvenanceMetrics(dto.getStudyId());
 
             default -> throw new IllegalArgumentException("Unsupported report scope: " + dto.getScope());
@@ -55,18 +68,59 @@ public class ReportServiceImpl implements ReportService {
                 .parametersJson(dto.getParametersJson())
                 .metricsJson(metricsJson)
                 .generatedAt(LocalDateTime.now())
-                .reportUri("/reports/" + System.currentTimeMillis() + ".pdf")
+                .reportUri(null)
                 .build();
 
-        return reportMapper.toResponse(reportRepository.save(report));
+        Report saved = reportRepository.save(report);
+
+        try {
+            Path dir = Paths.get(storagePath);
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
+            }
+
+            Map<String, Object> reportContent = new LinkedHashMap<>();
+            reportContent.put("reportId", saved.getReportId());
+            reportContent.put("studyId", saved.getStudyId());
+            reportContent.put("scope", saved.getScope().name());
+            reportContent.put("reportingPeriod", dto.getReportingPeriod());
+            reportContent.put("parametersJson",  dto.getParametersJson());
+            reportContent.put("generatedAt", saved.getGeneratedAt().toString());
+            reportContent.put("metrics", objectMapper.readValue(metricsJson, Object.class));
+
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+            String fileName = "report-" + saved.getReportId()
+                    + "-study-" + saved.getStudyId()
+                    + "-" + saved.getScope().name().toLowerCase()
+                    + "-" + timestamp + ".json";
+
+            Path filePath = dir.resolve(fileName);
+            Files.writeString(filePath,
+                    objectMapper.writerWithDefaultPrettyPrinter()
+                            .writeValueAsString(reportContent));
+
+            saved.setReportUri(filePath.toString());
+            saved = reportRepository.save(saved);
+
+            log.info("[ReportService] Report file saved | reportId={} path={}",
+                    saved.getReportId(), filePath);
+
+        } catch (Exception e) {
+            log.error("[ReportService] Failed to save report file | reportId={} error={}",
+                    saved.getReportId(), e.getMessage());
+            saved.setReportUri("/reports/" + System.currentTimeMillis() + ".json");
+            saved = reportRepository.save(saved);
+        }
+
+        return reportMapper.toResponse(saved);
     }
 
     private String buildEnrollmentMetrics(Long studyId) {
         EnrollmentStatsDTO stats = consentClient.getEnrollmentStats(studyId);
         Map<String, Object> metrics = Map.of(
                 "participants", Map.of(
-                        "total",     stats.getTotalParticipants(),
-                        "enrolled",  stats.getEnrolledCount(),
+                        "total", stats.getTotalParticipants(),
+                        "enrolled", stats.getEnrolledCount(),
                         "withdrawn", stats.getWithdrawnCount()
                 ));
         return toJson(metrics);
