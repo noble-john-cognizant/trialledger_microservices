@@ -28,14 +28,14 @@ public class StudyController {
     }
 
     @GetMapping("/{studyId}")
-    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER','COORDINATOR')")
     public ResponseEntity<StudyResponseDto> getStudyById(@PathVariable Long studyId) {
         return ResponseEntity.ok(studyService.getStudyById(studyId));
     }
 
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN','PI')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR')")
     public ResponseEntity<StudyResponseDto> createStudy(@Valid @RequestBody StudyRequestDto dto) throws JsonProcessingException {
         return ResponseEntity.status(HttpStatus.CREATED).body(studyService.createStudy(dto));
     }

@@ -31,11 +31,7 @@ public class ProtocolVersion {
 
     private LocalDate effectiveDate;
 
-<<<<<<< HEAD
     @Column(name = "approved_by_id")
-=======
-    @Column(name = "approved_by_id", nullable = false)
->>>>>>> 09b0807c705d15c7b53b6bb00bf12bc6fa4e2ec9
     private Long approvedById;
 
     @Enumerated(EnumType.STRING)
