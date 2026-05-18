@@ -1,7 +1,9 @@
-package com.cts.trialledger.service.impl;
+package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.ProvenanceClient;
 import com.cts.trialledger.dto.AssayRunRequestDTO;
 import com.cts.trialledger.dto.AssayRunResponseDTO;
+import com.cts.trialledger.dto.ProvenanceRequestDTO;
 import com.cts.trialledger.entity.AssayRun;
 import com.cts.trialledger.entity.Sample;
 import com.cts.trialledger.exception.AssayRunNotFoundException;
@@ -10,25 +12,34 @@ import com.cts.trialledger.exception.SampleNotFoundException;
 import com.cts.trialledger.mapper.AssayRunMapper;
 import com.cts.trialledger.repository.AssayRunRepository;
 import com.cts.trialledger.repository.SampleRepository;
-import com.cts.trialledger.service.AssayRunService;
-//import com.cts.trialledger.service.AuditService;
-//import com.cts.trialledger.util.AuthValidator;
-//import com.cts.trialledger.util.ProvenanceRecordUtil;
+import com.cts.trialledger.util.UserUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AssayRunServiceImpl implements AssayRunService {
 
     private final AssayRunRepository assayRunRepository;
     private final SampleRepository sampleRepository;
-//    private final AuditService auditService;
-//    private final ProvenanceRecordUtil provenanceRecordUtil;
+    private final ProvenanceClient provenanceClient;
     private final AssayRunMapper assayRunMapper;
+
+    @Value("${assay.result.storage-path:./results}")
+    private String storagePath;
 
     @Override
     public List<AssayRunResponseDTO> getAllAssayRuns() {
@@ -37,12 +48,6 @@ public class AssayRunServiceImpl implements AssayRunService {
                 .stream()
                 .map(assayRunMapper::toResponseDTO)
                 .collect(Collectors.toList());
-
-//        auditService.storeAudit(
-//                "VIEW_ASSAY",
-//                "assay_run",
-//                "User ID: " + AuthValidator.getCurrentUserId() + " viewed all assays"
-//        );
 
         return collect;
     }
@@ -53,12 +58,6 @@ public class AssayRunServiceImpl implements AssayRunService {
         AssayRun assayRun = assayRunRepository.findById(assayId)
                 .orElseThrow(() -> new AssayRunNotFoundException(assayId));
 
-//        auditService.storeAudit(
-//                "VIEW_ASSAY",
-//                "assay_run",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed assay with id: " + assayRun.getAssayId()
-//        );
 
         return assayRunMapper.toResponseDTO(assayRun);
     }
@@ -73,32 +72,72 @@ public class AssayRunServiceImpl implements AssayRunService {
                 .sample(sample)
                 .instrumentId(requestDTO.getInstrumentId())
                 .operatorId(requestDTO.getOperatorId())
-                .runDate(requestDTO.getRunDate())
+                .runDate(LocalDateTime.now())
                 .protocolRef(requestDTO.getProtocolRef())
-                .resultUri(requestDTO.getResultUri())
+                .resultUri(null)
                 .metadataJson(requestDTO.getMetadataJson())
                 .build();
 
         AssayRun saved = assayRunRepository.save(assayRun);
 
-//        auditService.storeAudit(
-//                "CREATE_ASSAY",
-//                "assay_run",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " created assay with id: " + saved.getAssayId()
-//        );
+        try {
+            Path dir = Paths.get(storagePath);
+            if (!Files.exists(dir)) {
+                Files.createDirectories(dir);
+            }
 
-        Map<String, Object> map = Map.of(
-                "sampleId", sample.getSampleId(),
-                "operatorId", assayRun.getOperatorId()
-        );
+            Map<String, Object> resultData = Map.of(
+                    "assayId",      saved.getAssayId(),
+                    "sampleId",     sample.getSampleId(),
+                    "studyId",      sample.getStudyId(),
+                    "instrumentId", requestDTO.getInstrumentId(),
+                    "operatorId",   requestDTO.getOperatorId(),
+                    "protocolRef",  requestDTO.getProtocolRef(),
+                    "runDate",      LocalDateTime.now().toString(),
+                    "metadata",     requestDTO.getMetadataJson() != null
+                            ? requestDTO.getMetadataJson() : "{}"
+            );
 
-//        provenanceRecordUtil.saveProvenanceRecord(
-//                "CREATE_ASSAY",
-//                "assay_run",
-//                saved.getAssayId(),
-//                map
-//        );
+            String timestamp = LocalDateTime.now()
+                    .format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
+            String fileName = "assay-" + saved.getAssayId()
+                    + "-sample-" + sample.getSampleId()
+                    + "-" + timestamp + ".json";
+
+            Path filePath = dir.resolve(fileName);
+            Files.writeString(filePath, new ObjectMapper().writeValueAsString(resultData));
+
+            saved.setResultUri(filePath.toString());
+            saved = assayRunRepository.save(saved);
+
+            log.info("[AssayRunService] Result file saved | assayId={} path={}",
+                    saved.getAssayId(), filePath);
+
+        } catch (Exception e) {
+            log.error("[AssayRunService] Failed to save result file | assayId={} error={}",
+                    saved.getAssayId(), e.getMessage());
+//            saved.setResultUri(requestDTO.getResultUri());
+            saved.setResultUri("./results/" + saved.getAssayId() + ".json");
+            saved = assayRunRepository.save(saved);
+
+        }
+
+        try {
+            Map<String, Object> map = Map.of(
+                    "sampleId",   sample.getSampleId(),
+                    "operatorId", assayRun.getOperatorId()
+            );
+            ProvenanceRequestDTO request = new ProvenanceRequestDTO(
+                    "CREATE_ASSAY",
+                    "assay_run",
+                    UserUtil.getCurrentUserId(),
+                    saved.getAssayId(),
+                    new ObjectMapper().writeValueAsString(map)
+            );
+            provenanceClient.recordProvenanceData(request);
+        } catch (Exception e) {
+            log.warn("[AssayRunService] Provenance recording failed: {}", e.getMessage());
+        }
 
         return assayRunMapper.toResponseDTO(saved);
     }
@@ -115,12 +154,6 @@ public class AssayRunServiceImpl implements AssayRunService {
                 .map(assayRunMapper::toResponseDTO)
                 .collect(Collectors.toList());
 
-//        auditService.storeAudit(
-//                "VIEW_ASSAY",
-//                "assay_run",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed assay by sample id: " + sampleId
-//        );
 
         return collect;
     }
@@ -140,12 +173,6 @@ public class AssayRunServiceImpl implements AssayRunService {
             );
         }
 
-//        auditService.storeAudit(
-//                "VIEW_ASSAY",
-//                "assay_run",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed assay by operator id: " + operatorId
-//        );
 
         return assays;
     }
@@ -164,14 +191,6 @@ public class AssayRunServiceImpl implements AssayRunService {
                     "No assay runs found for instrument ID: " + instrumentId
             );
         }
-
-//        auditService.storeAudit(
-//                "VIEW_ASSAY",
-//                "assay_run",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed assay by instrument id: " + instrumentId
-//        );
-
         return assays;
     }
 }

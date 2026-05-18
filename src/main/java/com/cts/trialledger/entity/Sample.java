@@ -47,12 +47,4 @@ public class Sample {
     @Column(name = "status", nullable = false)
     private SampleStatus status;
 
-//    @OneToMany(mappedBy = "sample",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-//    private List<ChainOfCustody> chainOfCustody;
-//
-//    @OneToMany(mappedBy = "sample",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-//    private List<AssayRun> assayRuns;
-//
-//    @OneToMany(mappedBy = "sample",fetch = FetchType.LAZY,cascade = CascadeType.ALL)
-//    private List<SampleStorage> sampleStorages;
 }

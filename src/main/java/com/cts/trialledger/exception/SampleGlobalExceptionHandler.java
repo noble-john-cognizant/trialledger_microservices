@@ -1,9 +1,10 @@
 package com.cts.trialledger.exception;
 
-import feign.FeignException;
+import com.cts.trialledger.dto.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -14,7 +15,11 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class SampleGlobalExceptionHandler {
-
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException ex) {
+        ErrorResponse response = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Access Denied", ex.getMessage(), LocalDateTime.now());
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
+    }
     @ExceptionHandler(SampleNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleSampleNotFound(SampleNotFoundException ex) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
@@ -53,14 +58,6 @@ public class SampleGlobalExceptionHandler {
         return new ResponseEntity<>(body, status);
     }
 
-    @ExceptionHandler(FeignException.NotFound.class)
-    public ResponseEntity<Map<String, Object>> handleFeignNotFound(
-            FeignException.NotFound ex) {
-
-        return buildErrorResponse(HttpStatus.NOT_FOUND,
-                "Resource not found in upstream service: " + ex.getMessage());
-    }
-
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(
             IllegalArgumentException ex) {
@@ -79,6 +76,8 @@ public class SampleGlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleJsonParseException(
             HttpMessageNotReadableException ex) {
 
-        return buildErrorResponse(HttpStatus.BAD_REQUEST, ex.getMostSpecificCause().getMessage());
+        return buildErrorResponse(HttpStatus.BAD_REQUEST,
+                ex.getMostSpecificCause().getMessage()
+        );
     }
 }

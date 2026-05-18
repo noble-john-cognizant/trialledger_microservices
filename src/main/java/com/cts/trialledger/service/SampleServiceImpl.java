@@ -1,6 +1,7 @@
 package com.cts.trialledger.service;
 
 import com.cts.trialledger.client.ParticipantClient;
+import com.cts.trialledger.client.ProvenanceClient;
 import com.cts.trialledger.client.StudyClient;
 import com.cts.trialledger.dto.*;
 import com.cts.trialledger.entity.ChainOfCustody;
@@ -19,8 +20,10 @@ import com.cts.trialledger.repository.SampleRepository;
 //import com.cts.trialledger.util.AuthValidator;
 //import com.cts.trialledger.util.ProvenanceRecordUtil;
 import com.cts.trialledger.repository.SampleStorageRepository;
+import com.cts.trialledger.util.UserUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -32,10 +35,8 @@ public class SampleServiceImpl implements SampleService {
     private final ParticipantClient participantClient;
     private final StudyClient studyClient;
     private final SampleRepository sampleRepository;
-//    private final AuditService auditService;
-//    private final ProvenanceRecordUtil provenanceRecordUtil;
+    private final ProvenanceClient provenanceClient;
     private final SampleMapper sampleMapper;
-    private SampleStatus status;
     private final ChainOfCustodyRepository chainOfCustodyRepository;
     private final ChainOfCustodyMapper chainOfCustodyMapper;
     private final SampleStorageMapper sampleStorageMapper;
@@ -51,12 +52,6 @@ public class SampleServiceImpl implements SampleService {
         validateParticipant(requestDTO.getParticipantId(), requestDTO.getStudyId());
         Sample saved = sampleRepository.save(sample);
 
-//        auditService.storeAudit(
-//                "CREATE_SAMPLE",
-//                "sample",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " created sample of id: " + saved.getSampleId()
-//        );
 
         Map<String, Object> map = Map.of(
                 "studyId", saved.getStudyId(),
@@ -65,13 +60,11 @@ public class SampleServiceImpl implements SampleService {
                 "status", saved.getStatus(),
                 "initialLocation", saved.getInitialLocation()
         );
-
-//        provenanceRecordUtil.saveProvenanceRecord(
-//                "CREATE_SAMPLE",
-//                "sample",
-//                saved.getSampleId(),
-//                map
-//        );
+        ProvenanceRequestDTO request = new ProvenanceRequestDTO("CREATE_SAMPLE",
+                "sample", UserUtil.getCurrentUserId(),
+                saved.getSampleId(),
+                new ObjectMapper().writeValueAsString(map));
+        provenanceClient.recordProvenanceData(request);
 
         return sampleMapper.toResponseDTO(saved);
     }
@@ -110,7 +103,6 @@ public class SampleServiceImpl implements SampleService {
     }
 
 
-
     @Override
     public List<SampleResponseDTO> getSamplesByParticipant(Long participantId) {
 
@@ -126,13 +118,8 @@ public class SampleServiceImpl implements SampleService {
             );
         }
 
-//        auditService.storeAudit(
-//                "VIEW_SAMPLE",
-//                "sample",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed sample by participant id: " + participantId
-//        );
-            return samples;
+
+        return samples;
     }
 
     @Override
@@ -150,12 +137,6 @@ public class SampleServiceImpl implements SampleService {
             );
         }
 
-//        auditService.storeAudit(
-//                "VIEW_SAMPLE",
-//                "sample",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed sample by status: " + status
-//        );
 
         return samples;
     }
@@ -172,9 +153,6 @@ public class SampleServiceImpl implements SampleService {
             throw new ResourceNotFoundException(
                     "No samples found for study ID: " + studyId);
         }
-
-//        audit("VIEW_SAMPLES_BY_STUDY", "sample",
-//                "User " + currentUserId() + " viewed samples for study id=" + studyId);
 
         return samples;
     }
@@ -201,11 +179,6 @@ public class SampleServiceImpl implements SampleService {
 
         StudyResponseDTO study = studyClient.getStudyById(sample.getStudyId());
         ParticipantResponseDTO participant = participantClient.getParticipantById(sample.getParticipantId());
-
-        // 4. Audit
-//        audit("VIEW_SAMPLE_FULL", "sample",
-//                "User " + currentUserId() + " viewed full details for sample id=" + sampleId);
-
 
         ApiResponseDTO response = new ApiResponseDTO();
         response.setSample(sampleMapper.toResponseDTO(sample));

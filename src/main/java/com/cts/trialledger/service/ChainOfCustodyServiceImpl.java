@@ -1,7 +1,9 @@
 package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.ProvenanceClient;
 import com.cts.trialledger.dto.ChainOfCustodyRequestDTO;
 import com.cts.trialledger.dto.ChainOfCustodyResponseDTO;
+import com.cts.trialledger.dto.ProvenanceRequestDTO;
 import com.cts.trialledger.entity.ChainOfCustody;
 import com.cts.trialledger.entity.Sample;
 import com.cts.trialledger.exception.ResourceNotFoundException;
@@ -9,11 +11,12 @@ import com.cts.trialledger.exception.SampleNotFoundException;
 import com.cts.trialledger.mapper.ChainOfCustodyMapper;
 import com.cts.trialledger.repository.ChainOfCustodyRepository;
 import com.cts.trialledger.repository.SampleRepository;
-//import com.cts.trialledger.service.AuditService;
-//import com.cts.trialledger.util.AuthValidator;
-//import com.cts.trialledger.util.ProvenanceRecordUtil;
+import com.cts.trialledger.util.UserUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import tools.jackson.databind.ObjectMapper;
+
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -23,8 +26,7 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
 
     private final ChainOfCustodyRepository chainOfCustodyRepository;
     private final SampleRepository sampleRepository;
-//    private final AuditService auditService;
-//    private final ProvenanceRecordUtil provenanceRecordUtil;
+    private final ProvenanceClient provenanceClient;
     private final ChainOfCustodyMapper chainOfCustodyMapper;
 
     @Override
@@ -37,7 +39,7 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                 .sample(sample)
                 .fromUser(requestDTO.getFromUser())
                 .toUser(requestDTO.getToUser())
-                .transferAt(requestDTO.getTransferAt())
+                .transferAt(LocalDateTime.now())
                 .fromLocation(requestDTO.getFromLocation())
                 .toLocation(requestDTO.getToLocation())
                 .notes(requestDTO.getNotes())
@@ -45,12 +47,6 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
 
         ChainOfCustody saved = chainOfCustodyRepository.save(coc);
 
-//        auditService.storeAudit(
-//                "TRANSFER_CUSTODY",
-//                "chain_of_custody",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " transferred sample of id: " + sampleId
-//        );
 
         Map<String, Object> map = Map.of(
                 "fromUser", saved.getFromUser(),
@@ -60,13 +56,14 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                 "sampleId", sampleId
         );
 
-//        provenanceRecordUtil.saveProvenanceRecord(
-//                "TRANSFER_CUSTODY",
-//                "chain_of_custody",
-//                saved.getCocId(),
-//                map
-//        );
+        ProvenanceRequestDTO dto = new ProvenanceRequestDTO(
 
+                "TRANSFER_CUSTODY",
+                "chain_of_custody", UserUtil.getCurrentUserId(),
+                saved.getCocId(),
+                new ObjectMapper().writeValueAsString(map)
+        );
+        provenanceClient.recordProvenanceData(dto);
         return chainOfCustodyMapper.toResponseDTO(saved);
     }
 
@@ -78,12 +75,6 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                         "Chain of Custody not found for id " + cocId
                 ));
 
-//        auditService.storeAudit(
-//                "VIEW_CUSTODY",
-//                "chain_of_custody",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed custody by id: " + cocId
-//        );
 
         return chainOfCustodyMapper.toResponseDTO(coc);
     }
@@ -100,12 +91,6 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                 .map(chainOfCustodyMapper::toResponseDTO)
                 .toList();
 
-//        auditService.storeAudit(
-//                "VIEW_CUSTODY",
-//                "chain_of_custody",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed custody by sample id: " + sampleId
-//        );
 
         return list;
     }
@@ -121,13 +106,6 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "No custody history for sample ID : " + sampleId
                 ));
-
-//        auditService.storeAudit(
-//                "VIEW_CUSTODY",
-//                "chain_of_custody",
-//                "User ID: " + AuthValidator.getCurrentUserId()
-//                        + " viewed latest custody"
-//        );
 
         return chainOfCustodyMapper.toResponseDTO(latest);
     }

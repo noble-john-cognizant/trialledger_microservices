@@ -5,6 +5,8 @@ import com.cts.trialledger.dto.SampleResponseDTO;
 import com.cts.trialledger.entity.Sample;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
+
 @Component
 public class SampleMapper {
 
@@ -13,7 +15,7 @@ public class SampleMapper {
                 .participantId(requestDTO.getParticipantId())
                 .studyId(requestDTO.getStudyId())
                 .sampleType(requestDTO.getSampleType())
-                .collectedAt(requestDTO.getCollectedAt())
+                .collectedAt(LocalDateTime.now())
                 .collectedBy(requestDTO.getCollectedBy())
                 .initialLocation(requestDTO.getInitialLocation())
                 .status(requestDTO.getStatus())

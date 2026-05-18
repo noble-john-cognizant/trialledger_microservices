@@ -25,9 +25,6 @@ public class SampleRequestDTO {
     @NotNull(message = "Sample type is required")
     private SampleType sampleType;
 
-    @NotNull(message = "Collected at is required")
-    private LocalDateTime collectedAt;
-
     @NotBlank(message = "Collected by is required")
     private String collectedBy;
 

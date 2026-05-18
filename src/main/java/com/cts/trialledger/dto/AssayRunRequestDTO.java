@@ -24,14 +24,11 @@ public class AssayRunRequestDTO {
     @NotNull(message = "Operator ID is required")
     private Long operatorId;
 
-    @NotNull(message = "Run date is required")
-    private LocalDateTime runDate;
-
     @NotBlank(message = "Protocol ref is required")
     private String protocolRef;
 
-    @NotBlank(message = "Result URI is required")
-    private String resultUri;
+//    @NotBlank(message = "Result URI is required")
+//    private String resultUri;
 
     private String metadataJson;
 

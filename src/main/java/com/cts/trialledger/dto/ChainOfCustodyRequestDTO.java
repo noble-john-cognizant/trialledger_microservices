@@ -24,9 +24,6 @@ public class ChainOfCustodyRequestDTO {
     @NotBlank(message = "To user is required")
     private String toUser;
 
-    @NotNull(message = "Transfer time is required")
-    private LocalDateTime transferAt;
-
     @NotBlank(message = "From location is required")
     private String fromLocation;
 

@@ -11,9 +11,9 @@ import com.cts.trialledger.repository.SampleRepository;
 import com.cts.trialledger.service.SampleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-//import org.springframework.security.access.prepost.PreAuthorize;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,7 +22,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/samples")
 @RequiredArgsConstructor
-//@PreAuthorize("hasAnyRole('TECHNICIAN')")
 public class SampleController {
 
     private final SampleService sampleService;
@@ -31,36 +30,43 @@ public class SampleController {
     private final AssayRunRepository assayRunRepository;
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('COORDINATOR','TECHNICIAN')")
     public SampleResponseDTO createSample(@Valid @RequestBody SampleRequestDTO dto) {
         return sampleService.createSample(dto);
     }
 
     @GetMapping("/{sampleId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER')")
     public SampleResponseDTO getSample(@PathVariable Long sampleId) {
         return sampleService.getSampleById(sampleId);
     }
 
     @GetMapping("/participant/{participantId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER','PARTICIPANT')")
     public List<SampleResponseDTO> getSamplesByParticipant(@PathVariable Long participantId) {
         return sampleService.getSamplesByParticipant(participantId);
     }
 
     @GetMapping("/study/{studyId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','TECHNICIAN','DATA_MANAGER')")
     public List<SampleResponseDTO> getSamplesByStudy(@PathVariable Long studyId) {
         return sampleService.getSamplesByStudy(studyId);
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER','PARTICIPANT')")
     public List<SampleResponseDTO> getSamplesByStatus(@PathVariable SampleStatus status) {
         return sampleService.getSamplesByStatus(status);
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER')")
     public List<SampleResponseDTO> getAllSamples() {
         return sampleService.getAllSamples();
     }
 
     @GetMapping("/{sampleId}/full")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER')")
     public ResponseEntity<ApiResponseDTO> getSampleFull(@PathVariable Long sampleId) {
         return ResponseEntity.ok(sampleService.getSampleFull(sampleId));
     }
