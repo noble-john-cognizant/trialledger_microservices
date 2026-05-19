@@ -1,0 +1,22 @@
+@if (open) {
+  <div class="modal-overlay" (click)="onBackdrop()">
+    <div class="modal d-block" tabindex="-1" role="dialog">
+      <div [class]="dialogClass" role="document" (click)="$event.stopPropagation()">
+        <div class="modal-content shadow-lg">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ title }}</h5>
+            <button type="button" class="btn-close" (click)="close.emit()"></button>
+          </div>
+          <div class="modal-body">
+            <ng-content />
+          </div>
+          @if (showFooter) {
+            <div class="modal-footer">
+              <ng-content select="[modalFooter]" />
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}

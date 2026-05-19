@@ -1,0 +1,9 @@
+.meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: .75rem;
+  background: #f8fafc;
+  padding: .75rem;
+  border-radius: .5rem;
+  font-size: .9rem;
+}

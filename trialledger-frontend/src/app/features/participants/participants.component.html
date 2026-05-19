@@ -1,0 +1,101 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Participants</h2>
+    <p class="text-muted mb-0">Enrollment roster across all studies.</p>
+  </div>
+  @if (canCreate()) {
+    <button class="btn btn-primary" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i> Enroll participant
+    </button>
+  }
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <input class="form-control" style="max-width:280px"
+      placeholder="Search by name or external ID…"
+      (input)="search.set($any($event.target).value)">
+    <select class="form-select" style="max-width:180px" (change)="statusFilter.set($any($event.target).value)">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <select class="form-select" style="max-width:240px" (change)="studyFilter.set($any($event.target).value)">
+      <option value="">All studies</option>
+      @for (s of studies(); track s.studyId) { <option [value]="s.studyId">{{ s.title }}</option> }
+    </select>
+    <span class="ms-auto small text-muted">{{ filtered().length }} participants</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (filtered().length === 0) {
+      <div class="p-4">
+        <tl-empty icon="bi-people" title="No participants" description="Enroll your first participant to get started." />
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr><th>Participant</th><th>Study</th><th>DOB</th><th>Contact</th><th>Status</th><th class="text-end">Actions</th></tr>
+          </thead>
+          <tbody>
+            @for (p of filtered(); track p.participantId) {
+              <tr>
+                <td>
+                  <div class="fw-semibold">{{ p.name }}</div>
+                  <small class="text-muted mono">{{ p.externalId }}</small>
+                </td>
+                <td>{{ studyTitle(p.studyId) }}</td>
+                <td><small class="text-muted">{{ p.dob | date:'mediumDate' }}</small></td>
+                <td><small class="text-muted">{{ p.contactInfo }}</small></td>
+                <td><tl-status [value]="p.enrollmentStatus" /></td>
+                <td class="text-end">
+                  @if (canViewConsent()) {
+                    <a class="btn btn-sm btn-light me-1" [routerLink]="['/consents']"
+                      [queryParams]="{ participantId: p.participantId }">
+                      <i class="bi bi-pen"></i>
+                    </a>
+                  }
+                  @if (canViewVisits()) {
+                    <a class="btn btn-sm btn-light me-1" [routerLink]="['/visits']"
+                      [queryParams]="{ participantId: p.participantId }">
+                      <i class="bi bi-calendar-event"></i>
+                    </a>
+                  }
+                  @if (canUpdate()) {
+                    <select class="form-select form-select-sm d-inline-block" style="width:auto"
+                      (change)="updateStatus(p, $any($event.target).value)">
+                      <option value="">Status…</option>
+                      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+                    </select>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<tl-modal [open]="open()" title="Enroll participant" (close)="open.set(false)">
+  <form [formGroup]="form" class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Study</label>
+      <select class="form-select" formControlName="studyId">
+        <option [ngValue]="null">Select…</option>
+        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }
+      </select>
+    </div>
+    <div class="col-md-6"><label class="form-label">External ID</label><input class="form-control" formControlName="externalId"></div>
+    <div class="col-md-6"><label class="form-label">Name</label><input class="form-control" formControlName="name"></div>
+    <div class="col-md-6"><label class="form-label">Date of birth</label><input type="date" class="form-control" formControlName="dob"></div>
+    <div class="col-12"><label class="form-label">Contact info</label><input class="form-control" formControlName="contactInfo" placeholder="email or phone"></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="open.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">Enroll</button>
+  </div>
+</tl-modal>

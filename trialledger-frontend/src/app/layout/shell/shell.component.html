@@ -1,0 +1,63 @@
+<tl-toasts />
+<tl-user-profile [open]="profileOpen()" (close)="profileOpen.set(false)" />
+
+<div class="shell">
+  <aside class="sidebar" [class.collapsed]="collapsed()">
+    <div class="brand d-flex align-items-center gap-2 px-3 py-3 mb-2">
+      <span class="brand-logo">TL</span>
+      @if (!collapsed()) { <span class="brand-name">TrialLedger</span> }
+    </div>
+
+    <nav class="nav flex-column">
+      @for (item of visibleNav(); track item.route) {
+        <a [routerLink]="item.route" routerLinkActive="active" class="nav-link nav-item-tl">
+          <i class="bi" [ngClass]="item.icon"></i>
+          @if (!collapsed()) { <span>{{ item.label }}</span> }
+        </a>
+      }
+    </nav>
+
+    <div class="side-foot p-2 mt-auto">
+      <button class="btn btn-sm btn-collapse w-100" (click)="collapsed.set(!collapsed())">
+        @if (collapsed()) {
+          <i class="bi bi-chevron-right"></i>
+        } @else {
+          <i class="bi bi-chevron-left me-1"></i> Collapse
+        }
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="search">
+        <i class="bi bi-search"></i>
+        <input placeholder="Search studies, participants, samples…" />
+      </div>
+
+      <div class="top-actions ms-auto d-flex align-items-center gap-2">
+        <a routerLink="/notifications" class="icon-btn position-relative" title="Notifications">
+          <i class="bi bi-bell"></i>
+          @if (unreadCount() > 0) {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+              {{ unreadCount() }}
+            </span>
+          }
+        </a>
+
+        <button class="user-chip" (click)="profileOpen.set(true)" title="My account">
+          <div class="avatar">{{ initials() }}</div>
+          <div class="user-meta text-start">
+            <div class="name">{{ user()?.name }}</div>
+            <div class="role">{{ user()?.role }}</div>
+          </div>
+          <i class="bi bi-person-circle ms-1"></i>
+        </button>
+      </div>
+    </header>
+
+    <section class="content">
+      <router-outlet />
+    </section>
+  </main>
+</div>
