@@ -1,10 +1,9 @@
 package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.AuthClient;
 import com.cts.trialledger.client.ProvenanceClient;
 import com.cts.trialledger.client.StudyClient;
-import com.cts.trialledger.dto.ParticipantRequestDTO;
-import com.cts.trialledger.dto.ParticipantResponseDTO;
-import com.cts.trialledger.dto.ProvenanceRequestDTO;
+import com.cts.trialledger.dto.*;
 import com.cts.trialledger.entity.Participant;
 import com.cts.trialledger.exception.DuplicateContactInfoException;
 import com.cts.trialledger.exception.ResourceNotFoundException;
@@ -18,6 +17,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
@@ -31,7 +31,9 @@ public class ParticipantService {
     private final StudyClient studyClient;
     private final ProvenanceClient provenanceClient;
     private final ParticipantRepository repo;
+    private final AuthClient authClient;
 
+    @Transactional
     public ParticipantResponseDTO createParticipant(ParticipantRequestDTO dto) {
 
         log.info("Creating participant with studyId: {}", dto.getStudyId());
@@ -39,6 +41,9 @@ public class ParticipantService {
         //  HANDLE STUDY SERVICE (Feign Exception)
         try {
             studyClient.getStudyById(dto.getStudyId());
+            // Create participant in user table
+            RegisterDTO registerDto = new RegisterDTO(dto.getEmail(), "12345678",dto.getPhone(),dto.getName());
+            authClient.register(registerDto);
         } catch (FeignException.NotFound ex) {
 
             log.error("Study not found: {}", dto.getStudyId());
@@ -52,7 +57,7 @@ public class ParticipantService {
             throw new RuntimeException("Study Service is currently unavailable");
         }
 
-        if (repo.existsByContactInfo(dto.getContactInfo())) {
+        if (repo.existsByContactInfo(dto.getPhone())) {
             throw new DuplicateContactInfoException("Contact info already exists");
         }
 
@@ -62,6 +67,7 @@ public class ParticipantService {
 
         try {
             saved = repo.save(p);
+
         } catch (DataIntegrityViolationException ex) {
 
             String message = ex.getMostSpecificCause().getMessage().toLowerCase();
@@ -96,6 +102,14 @@ public class ParticipantService {
         return repo.findAll().stream().map(ParticipantMapper::toResponse).collect(Collectors.toList());
     }
 
+    public EnrollmentStatsDTO getEnrollmentStatus(Long studyId) {
+        return EnrollmentStatsDTO.builder()
+                .studyId(studyId)
+                .totalParticipants(repo.countByStudyId(studyId))
+                .enrolledCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.ENROLLED))
+                .withdrawnCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.WITHDRAWN))
+                .build();
+    }
     //  GET BY ID
     public ParticipantResponseDTO getParticipantById(Long id) {
 

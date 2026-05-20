@@ -17,17 +17,25 @@
       <option value="study">By study</option>
     </select>
     @if (scope() === 'participant') {
-      <select class="form-select" style="max-width:280px"
-        (change)="participantId.set(+$any($event.target).value || null)">
-        <option [value]="">Select participant…</option>
-        @for (p of participants(); track p.participantId) { <option [value]="p.participantId">{{ p.name }}</option> }
-      </select>
+      <div style="min-width:280px; max-width:380px; flex:1">
+        <tl-search-select
+          [items]="participantOptions()"
+          [value]="participantId()"
+          [canList]="canListParticipants()"
+          [placeholder]="'Search participant…'"
+          [idPlaceholder]="'Enter participant ID'"
+          (valueChange)="participantId.set($event)" />
+      </div>
     } @else {
-      <select class="form-select" style="max-width:280px"
-        (change)="studyId.set(+$any($event.target).value || null)">
-        <option [value]="">Select study…</option>
-        @for (s of studies(); track s.studyId) { <option [value]="s.studyId">{{ s.title }}</option> }
-      </select>
+      <div style="min-width:280px; max-width:380px; flex:1">
+        <tl-search-select
+          [items]="studyOptions()"
+          [value]="studyId()"
+          [canList]="canListStudy()"
+          [placeholder]="'Search study…'"
+          [idPlaceholder]="'Enter study ID'"
+          (valueChange)="studyId.set($event)" />
+      </div>
     }
     <button class="btn btn-outline-primary" (click)="load()">Load</button>
     <span class="ms-auto small text-muted">{{ list().length }} visits</span>
@@ -45,14 +53,18 @@
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
           <thead>
-            <tr><th>Visit</th><th>Type</th><th>Participant</th><th>Scheduled</th><th>Performed</th><th>Status</th><th class="text-end">Actions</th></tr>
+            <tr><th>Visit ID</th><th>Type</th><th>Participant</th><th>Study</th><th>Scheduled</th><th>Performed</th><th>Status</th><th class="text-end">Actions</th></tr>
           </thead>
           <tbody>
             @for (v of list(); track v.visitId) {
               <tr>
-                <td class="mono">#{{ v.visitId }}</td>
-                <td><span class="badge bg-soft-primary">{{ v.visitType }}</span></td>
-                <td>{{ participantName(v.participantId) }}</td>
+                <td><span class="badge bg-soft-primary">#{{ v.visitId }}</span></td>
+                <td><span class="badge bg-soft-secondary">{{ v.visitType }}</span></td>
+                <td>
+                  <span class="badge bg-soft-secondary me-1">#{{ v.participantId }}</span>
+                  <small>{{ participantName(v.participantId) }}</small>
+                </td>
+                <td><small class="text-muted">#{{ v.studyId }}</small></td>
                 <td><small class="text-muted">{{ v.scheduledAt | date:'medium' }}</small></td>
                 <td><small class="text-muted">{{ v.performedAt | date:'medium' }}</small></td>
                 <td><tl-status [value]="v.status" /></td>
@@ -88,17 +100,21 @@
   <form [formGroup]="form" class="row g-3">
     <div class="col-md-6">
       <label class="form-label">Participant</label>
-      <select class="form-select" formControlName="participantId">
-        <option [ngValue]="null">Select…</option>
-        @for (p of participants(); track p.participantId) { <option [ngValue]="p.participantId">{{ p.name }}</option> }
-      </select>
+      <tl-search-select
+        [items]="participantOptions()"
+        [value]="form.controls.participantId.value"
+        [canList]="canListParticipants()"
+        [idPlaceholder]="'Enter participant ID'"
+        (valueChange)="setParticipant($event)" />
     </div>
     <div class="col-md-6">
       <label class="form-label">Study</label>
-      <select class="form-select" formControlName="studyId">
-        <option [ngValue]="null">Select…</option>
-        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }
-      </select>
+      <tl-search-select
+        [items]="studyOptions()"
+        [value]="form.controls.studyId.value"
+        [canList]="canListStudy()"
+        [idPlaceholder]="'Enter study ID'"
+        (valueChange)="setStudy($event)" />
     </div>
     <div class="col-md-6">
       <label class="form-label">Visit type</label>

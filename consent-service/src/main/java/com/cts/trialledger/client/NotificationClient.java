@@ -5,10 +5,9 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "notification-service")
+@FeignClient(name = "NOTIFICATION-SERVICE")
 public interface NotificationClient {
 
     @PostMapping("/api/notifications")
-    void createNotification(
-            @RequestBody NotificationRequestDTO dto);
+    void createNotification(@RequestBody NotificationRequestDTO dto);
 }

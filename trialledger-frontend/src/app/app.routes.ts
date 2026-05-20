@@ -29,6 +29,9 @@ export const routes: Routes = [
       { path: 'participants',
         canActivate: [permissionGuard('PARTICIPANT_LIST')],
         loadComponent: () => import('./features/participants/participants.component').then(m => m.ParticipantsComponent) },
+      { path: 'participants/:id',
+        canActivate: [permissionGuard('PARTICIPANT_VIEW')],
+        loadComponent: () => import('./features/participants/participant-detail/participant-detail.component').then(m => m.ParticipantDetailComponent) },
 
       { path: 'consents',
         canActivate: [permissionGuard('CONSENT_VIEW')],

@@ -12,17 +12,22 @@
 
 <div class="card mb-3">
   <div class="card-body d-flex flex-wrap gap-2 align-items-center">
-    <input class="form-control" style="max-width:280px"
-      placeholder="Search by name or external ID…"
+    <input class="form-control" style="max-width:300px"
+      placeholder="Search by ID, name or external ID…"
       (input)="search.set($any($event.target).value)">
     <select class="form-select" style="max-width:180px" (change)="statusFilter.set($any($event.target).value)">
       <option value="">All statuses</option>
       @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
     </select>
-    <select class="form-select" style="max-width:240px" (change)="studyFilter.set($any($event.target).value)">
-      <option value="">All studies</option>
-      @for (s of studies(); track s.studyId) { <option [value]="s.studyId">{{ s.title }}</option> }
-    </select>
+    @if (canListStudy()) {
+      <select class="form-select" style="max-width:260px" (change)="studyFilter.set($any($event.target).value)">
+        <option value="">All studies</option>
+        @for (s of studies(); track s.studyId) {
+          <option [value]="s.studyId">#{{ s.studyId }} – {{ s.title }}
+          </option>
+        }
+      </select>
+    }
     <span class="ms-auto small text-muted">{{ filtered().length }} participants</span>
   </div>
 </div>
@@ -37,29 +42,50 @@
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
           <thead>
-            <tr><th>Participant</th><th>Study</th><th>DOB</th><th>Contact</th><th>Status</th><th class="text-end">Actions</th></tr>
+            <tr>
+              <th style="width:80px">ID</th>
+              <th>Participant</th>
+              <th>Study</th>
+              <th>DOB</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th class="text-end">Actions</th>
+            </tr>
           </thead>
           <tbody>
             @for (p of filtered(); track p.participantId) {
               <tr>
+                <td><span class="badge bg-soft-primary">#{{ p.participantId }}</span></td>
                 <td>
                   <div class="fw-semibold">{{ p.name }}</div>
                   <small class="text-muted mono">{{ p.externalId }}</small>
                 </td>
-                <td>{{ studyTitle(p.studyId) }}</td>
+                <td>
+                  <span class="badge bg-soft-secondary me-1">#{{ p.studyId }}</span>
+                  <small>{{ studyTitle(p.studyId) }}</small>
+                </td>
                 <td><small class="text-muted">{{ p.dob | date:'mediumDate' }}</small></td>
                 <td><small class="text-muted">{{ p.contactInfo }}</small></td>
                 <td><tl-status [value]="p.enrollmentStatus" /></td>
                 <td class="text-end">
+                  <a class="btn btn-sm btn-light me-1"
+                    [routerLink]="['/participants', p.participantId]"
+                    title="Open participant dashboard">
+                    <i class="bi bi-eye"></i>
+                  </a>
                   @if (canViewConsent()) {
-                    <a class="btn btn-sm btn-light me-1" [routerLink]="['/consents']"
-                      [queryParams]="{ participantId: p.participantId }">
+                    <a class="btn btn-sm btn-light me-1"
+                      [routerLink]="['/consents']"
+                      [queryParams]="{ participantId: p.participantId }"
+                      title="Consents">
                       <i class="bi bi-pen"></i>
                     </a>
                   }
                   @if (canViewVisits()) {
-                    <a class="btn btn-sm btn-light me-1" [routerLink]="['/visits']"
-                      [queryParams]="{ participantId: p.participantId }">
+                    <a class="btn btn-sm btn-light me-1"
+                      [routerLink]="['/visits']"
+                      [queryParams]="{ participantId: p.participantId }"
+                      title="Visits">
                       <i class="bi bi-calendar-event"></i>
                     </a>
                   }
@@ -82,17 +108,47 @@
 
 <tl-modal [open]="open()" title="Enroll participant" (close)="open.set(false)">
   <form [formGroup]="form" class="row g-3">
-    <div class="col-md-6">
+    <div class="col-12">
       <label class="form-label">Study</label>
-      <select class="form-select" formControlName="studyId">
-        <option [ngValue]="null">Select…</option>
-        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }
-      </select>
+      <tl-search-select
+        [items]="studyOptions()"
+        [value]="form.controls.studyId.value"
+        [canList]="canListStudy()"
+        [idPlaceholder]="'Enter study ID'"
+        (valueChange)="setStudyId($event)" />
     </div>
-    <div class="col-md-6"><label class="form-label">External ID</label><input class="form-control" formControlName="externalId"></div>
-    <div class="col-md-6"><label class="form-label">Name</label><input class="form-control" formControlName="name"></div>
-    <div class="col-md-6"><label class="form-label">Date of birth</label><input type="date" class="form-control" formControlName="dob"></div>
-    <div class="col-12"><label class="form-label">Contact info</label><input class="form-control" formControlName="contactInfo" placeholder="email or phone"></div>
+    <div class="col-md-6">
+      <label class="form-label">External ID</label>
+      <input class="form-control" formControlName="externalId" placeholder="e.g. P-2026-001">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Full name</label>
+      <input class="form-control" formControlName="name">
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Email <span class="text-danger">*</span></label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+        <input type="email" class="form-control" formControlName="email" placeholder="participant@example.com">
+      </div>
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <small class="text-danger">Valid email required</small>
+      }
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Phone <small class="text-danger">*</small></label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+        <input type="number" class="form-control" formControlName="phone">
+      </div>
+      @if (form.controls.phone.invalid && form.controls.phone.touched) {
+        <small class="text-danger">Valid phone number required</small>
+      }
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Date of birth</label>
+      <input type="date" class="form-control" formControlName="dob">
+    </div>
   </form>
   <div modalFooter>
     <button class="btn btn-light" (click)="open.set(false)">Cancel</button>

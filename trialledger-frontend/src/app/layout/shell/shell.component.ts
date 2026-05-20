@@ -4,6 +4,7 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastsComponent } from '../../shared/toasts/toasts.component';
 import { UserProfileComponent } from '../../features/user-profile/user-profile.component';
+import { GlobalSearchComponent } from '../global-search/global-search.component';
 import { NotificationService } from '../../core/services/notification.service';
 import { PermissionKey } from '../../core/auth/permissions';
 
@@ -18,7 +19,8 @@ interface NavItem {
 @Component({
   selector: 'tl-shell',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, ToastsComponent, UserProfileComponent],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive,
+    ToastsComponent, UserProfileComponent, GlobalSearchComponent],
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.css']
 })

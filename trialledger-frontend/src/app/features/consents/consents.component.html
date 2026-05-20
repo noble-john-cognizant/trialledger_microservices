@@ -18,21 +18,25 @@
     </select>
 
     @if (scope() === 'participant') {
-      <select class="form-select" style="max-width:300px"
-        (change)="participantId.set(+$any($event.target).value || null)">
-        <option [value]="">Select participant…</option>
-        @for (p of participants(); track p.participantId) {
-          <option [value]="p.participantId">{{ p.name }} ({{ p.externalId }})</option>
-        }
-      </select>
+      <div style="min-width:300px; max-width:400px; flex:1">
+        <tl-search-select
+          [items]="participantOptions()"
+          [value]="participantId()"
+          [canList]="canListParticipants()"
+          [placeholder]="'Search participant by name or ID…'"
+          [idPlaceholder]="'Enter participant ID'"
+          (valueChange)="participantId.set($event)" />
+      </div>
     } @else {
-      <select class="form-select" style="max-width:280px"
-        (change)="studyId.set(+$any($event.target).value || null)">
-        <option [value]="">Select study…</option>
-        @for (s of studies(); track s.studyId) {
-          <option [value]="s.studyId">{{ s.title }}</option>
-        }
-      </select>
+      <div style="min-width:300px; max-width:400px; flex:1">
+        <tl-search-select
+          [items]="studyOptions()"
+          [value]="studyId()"
+          [canList]="canListStudy()"
+          [placeholder]="'Search study by title or ID…'"
+          [idPlaceholder]="'Enter study ID'"
+          (valueChange)="studyId.set($event)" />
+      </div>
     }
 
     <button class="btn btn-outline-primary" (click)="load()">Load</button>
@@ -88,14 +92,22 @@
 
 <tl-modal [open]="recordOpen()" title="Record consent" (close)="recordOpen.set(false)">
   <form [formGroup]="recordForm" class="row g-3">
-    <div class="col-md-6">
+    <div class="col-12">
       <label class="form-label">Participant</label>
-      <select class="form-select" formControlName="participantId">
-        <option [ngValue]="null">Select…</option>
-        @for (p of participants(); track p.participantId) { <option [ngValue]="p.participantId">{{ p.name }}</option> }
-      </select>
+      <tl-search-select
+        [items]="participantOptions()"
+        [value]="recordForm.controls.participantId.value"
+        [canList]="canListParticipants()"
+        [idPlaceholder]="'Enter participant ID'"
+        (valueChange)="setRecordParticipant($event)" />
     </div>
-    <div class="col-md-6"><label class="form-label">Protocol ID</label><input type="number" class="form-control" formControlName="protocolId"></div>
+    <div class="col-md-6">
+      <label class="form-label">Protocol ID</label>
+      <div class="input-group">
+        <span class="input-group-text"><i class="bi bi-hash"></i></span>
+        <input type="number" class="form-control" formControlName="protocolId">
+      </div>
+    </div>
     <div class="col-md-6"><label class="form-label">Version number</label><input class="form-control" formControlName="versionNumber"></div>
     <div class="col-md-6">
       <label class="form-label">Method</label>

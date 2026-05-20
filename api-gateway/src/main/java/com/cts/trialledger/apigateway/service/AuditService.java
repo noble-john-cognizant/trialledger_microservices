@@ -2,15 +2,14 @@ package com.cts.trialledger.apigateway.service;
 
 import com.cts.trialledger.apigateway.dto.AuditLogDTO;
 import com.cts.trialledger.apigateway.entity.AuditLog;
-import com.cts.trialledger.apigateway.entity.User;
 import com.cts.trialledger.apigateway.mapper.AuditMapper;
+import com.cts.trialledger.apigateway.model.UserDetails;
 import com.cts.trialledger.apigateway.repository.AuditLogRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -62,7 +61,7 @@ public class AuditService {
     private Long extractUserId(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() &&
-                !"anonymousUser".equals(auth.getPrincipal()) && auth.getPrincipal() instanceof User user) {
+                !"anonymousUser".equals(auth.getPrincipal()) && auth.getPrincipal() instanceof UserDetails user) {
             return user.getUserId();
         }
         return 0L;

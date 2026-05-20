@@ -4,7 +4,6 @@ package com.cts.trialledger.controller;
 import com.cts.trialledger.dto.*;
 import com.cts.trialledger.entity.Participant;
 import com.cts.trialledger.model.EnrollmentStatus;
-import com.cts.trialledger.repository.ParticipantRepository;
 import com.cts.trialledger.service.ParticipantService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +17,6 @@ import java.util.List;
 public class ParticipantController {
 
     private final ParticipantService service;
-    private final ParticipantRepository participantRepository;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('PI','COORDINATOR')")
@@ -47,12 +45,7 @@ public class ParticipantController {
 
     @GetMapping("/stats/{studyId}")
     public EnrollmentStatsDTO getEnrollmentStats(@PathVariable Long studyId) {
-        return EnrollmentStatsDTO.builder()
-                .studyId(studyId)
-                .totalParticipants(participantRepository.countByStudyId(studyId))
-                .enrolledCount(participantRepository.countByStudyIdAndEnrollmentStatus(studyId, "ENROLLED"))
-                .withdrawnCount(participantRepository.countByStudyIdAndEnrollmentStatus(studyId, "WITHDRAWN"))
-                .build();
+        return service.getEnrollmentStatus(studyId);
     }
 
     @PatchMapping("/{participantId}/status")

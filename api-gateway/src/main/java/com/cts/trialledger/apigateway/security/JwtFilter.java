@@ -2,8 +2,7 @@ package com.cts.trialledger.apigateway.security;
 
 import com.cts.trialledger.apigateway.config.MutableHttpServletRequest;
 import com.cts.trialledger.apigateway.dto.ErrorResponse;
-import com.cts.trialledger.apigateway.entity.User;
-import com.cts.trialledger.apigateway.model.Role;
+import com.cts.trialledger.apigateway.model.UserDetails;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -12,6 +11,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -19,6 +19,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
@@ -37,6 +38,9 @@ public class JwtFilter extends OncePerRequestFilter {
         if (authorization != null && authorization.startsWith("Bearer ")) {
             accessToken = authorization.substring(7);
         }
+        MutableHttpServletRequest mutable = new MutableHttpServletRequest(request);
+        mutable.putHeader("X-Gateway-Auth", "false");
+
         if (accessToken != null) {
             try {
                 if (jwtUtil.validateToken(accessToken)) {
@@ -46,24 +50,18 @@ public class JwtFilter extends OncePerRequestFilter {
                     String name = claims.get("name", String.class);
                     String role = claims.get("role", String.class);
 
-                    User userDetails = new User();
-                    userDetails.setUserId(userId);
-                    userDetails.setName(name);
-                    userDetails.setEmail(email);
-                    userDetails.setRole(Role.valueOf(role));
+                    UserDetails userDetails = new UserDetails(userId,name,role,email);
 
-                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userDetails, null, List.of(new SimpleGrantedAuthority("ROLE_"+role)));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
                     // ── Wrap request and inject headers
-                    MutableHttpServletRequest mutable = new MutableHttpServletRequest(request);
                     mutable.removeHeader("Authorization");           // remove raw JWT
                     mutable.putHeader("X-User-Id", String.valueOf(userId));
                     mutable.putHeader("X-User-Name", name);
                     mutable.putHeader("X-User-Email", email);
                     mutable.putHeader("X-User-Role", role);
                     mutable.putHeader("X-Gateway-Auth", "true");
-
                     // IMPORTANT: pass mutable, not the original request
                     filterChain.doFilter(mutable, response);
                     return;
@@ -89,7 +87,7 @@ public class JwtFilter extends OncePerRequestFilter {
             }
         }
 
-        filterChain.doFilter(request, response);
+        filterChain.doFilter(mutable, response);
     }
 
     private void sendErrorResponse(HttpServletResponse response, int status, ErrorResponse errorResponse) throws IOException {

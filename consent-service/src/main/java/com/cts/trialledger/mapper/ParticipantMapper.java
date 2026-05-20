@@ -11,7 +11,7 @@ public class ParticipantMapper {
                 .externalId(dto.getExternalId())
                 .name(dto.getName())
                 .dob(dto.getDob())
-                .contactInfo(dto.getContactInfo())
+                .contactInfo(dto.getPhone())
                 .build();
     }
 

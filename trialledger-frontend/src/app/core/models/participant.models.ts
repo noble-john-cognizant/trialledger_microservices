@@ -10,7 +10,8 @@ export interface ParticipantRequestDTO {
   externalId: string;
   name: string;
   dob: string;
-  contactInfo: string;
+  phone: string;
+  email: string;
 }
 
 export interface ParticipantResponseDTO {

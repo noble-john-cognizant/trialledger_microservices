@@ -23,7 +23,21 @@
 }
 .brand-name { font-size: 1.1rem; font-weight: 800; }
 
-.nav { padding: 0 .5rem; flex: 1; overflow-y: auto; }
+.nav {
+  padding: 0 .5rem;
+  flex: 1 1 auto;
+  min-height: 0;          /* allow flex child to actually shrink and scroll */
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex-wrap: nowrap;      /* stop Bootstrap .nav from wrapping items horizontally */
+  display: flex;
+  flex-direction: column;
+}
+.nav-item-tl span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .nav-item-tl {
   display: flex; align-items: center; gap: .75rem;
   color: var(--tl-sidebar-text); border-radius: 8px;

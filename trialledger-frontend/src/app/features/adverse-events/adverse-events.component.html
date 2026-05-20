@@ -37,15 +37,15 @@
       <div class="table-responsive">
         <table class="table table-hover mb-0 align-middle">
           <thead>
-            <tr><th>ID</th><th>Description</th><th>Participant</th><th>Study</th><th>Severity</th><th>Status</th><th>Reported</th><th class="text-end">Actions</th></tr>
+            <tr><th>AE ID</th><th>Description</th><th>Participant</th><th>Study</th><th>Severity</th><th>Status</th><th>Reported</th><th class="text-end">Actions</th></tr>
           </thead>
           <tbody>
             @for (ae of filtered(); track ae.aeId) {
               <tr>
-                <td class="mono">#{{ ae.aeId }}</td>
+                <td><span class="badge bg-soft-primary">#{{ ae.aeId }}</span></td>
                 <td><span class="truncate">{{ ae.description }}</span></td>
-                <td>{{ ae.participantId }}</td>
-                <td>{{ ae.studyId }}</td>
+                <td><span class="badge bg-soft-secondary">#{{ ae.participantId }}</span></td>
+                <td><span class="badge bg-soft-secondary">#{{ ae.studyId }}</span></td>
                 <td><tl-status [value]="ae.severity" /></td>
                 <td><tl-status [value]="ae.status" /></td>
                 <td><small class="text-muted">{{ ae.reportedAt | date:'short' }}</small></td>
@@ -65,17 +65,21 @@
   <form [formGroup]="form" class="row g-3">
     <div class="col-md-6">
       <label class="form-label">Participant</label>
-      <select class="form-select" formControlName="participantId">
-        <option [ngValue]="null">Select…</option>
-        @for (p of participants(); track p.participantId) { <option [ngValue]="p.participantId">{{ p.name }}</option> }
-      </select>
+      <tl-search-select
+        [items]="participantOptions()"
+        [value]="form.controls.participantId.value"
+        [canList]="canListParticipants()"
+        [idPlaceholder]="'Enter participant ID'"
+        (valueChange)="setParticipant($event)" />
     </div>
     <div class="col-md-6">
       <label class="form-label">Study</label>
-      <select class="form-select" formControlName="studyId">
-        <option [ngValue]="null">Select…</option>
-        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }
-      </select>
+      <tl-search-select
+        [items]="studyOptions()"
+        [value]="form.controls.studyId.value"
+        [canList]="canListStudy()"
+        [idPlaceholder]="'Enter study ID'"
+        (valueChange)="setStudy($event)" />
     </div>
     <div class="col-md-6">
       <label class="form-label">Severity</label>

@@ -13,11 +13,15 @@ import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
 
 @Component({
   selector: 'tl-participants',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, DatePipe, StatusBadgeComponent, ModalComponent, EmptyStateComponent],
+  imports: [
+    CommonModule, RouterLink, ReactiveFormsModule, DatePipe,
+    StatusBadgeComponent, ModalComponent, EmptyStateComponent, SearchSelectComponent
+  ],
   templateUrl: './participants.component.html',
   styleUrls: ['./participants.component.css']
 })
@@ -40,6 +44,16 @@ export class ParticipantsComponent implements OnInit {
   canUpdate = computed(() => this.auth.can('PARTICIPANT_UPDATE'));
   canViewConsent = computed(() => this.auth.can('CONSENT_VIEW'));
   canViewVisits = computed(() => this.auth.can('VISIT_VIEW'));
+  canListStudy = computed(() => this.auth.can('STUDY_LIST'));
+
+  /** Study options for the search-select picker */
+  studyOptions = computed<SearchOption[]>(() =>
+    this.studies().map(s => ({
+      id: s.studyId,
+      label: s.title,
+      subtitle: `${s.sponsor} · #${s.protocolNumber}`
+    }))
+  );
 
   filtered = computed(() => {
     const s = this.search().toLowerCase();
@@ -48,7 +62,9 @@ export class ParticipantsComponent implements OnInit {
     return this.list().filter(p =>
       (!st || p.enrollmentStatus === st) &&
       (!sd || String(p.studyId) === sd) &&
-      (!s || p.name.toLowerCase().includes(s) || p.externalId.toLowerCase().includes(s))
+      (!s || p.name.toLowerCase().includes(s)
+           || p.externalId.toLowerCase().includes(s)
+           || String(p.participantId).includes(s))
     );
   });
 
@@ -56,28 +72,44 @@ export class ParticipantsComponent implements OnInit {
     studyId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
     externalId: ['', Validators.required],
     name: ['', Validators.required],
-    dob: ['', Validators.required],
-    contactInfo: ['', Validators.required]
+    email: ['', [Validators.required, Validators.email]],
+    phone: [''],
+    dob: ['', Validators.required]
   });
 
   ngOnInit() {
     this.load();
-    if (this.auth.can('STUDY_LIST')) {
+    if (this.canListStudy()) {
       this.studyApi.list().subscribe(s => this.studies.set(s ?? []));
     }
   }
 
   load() { this.api.list().subscribe({ next: v => this.list.set(v ?? []) }); }
-  studyTitle(id: number) { return this.studies().find(s => s.studyId === id)?.title || `Study #${id}`; }
+
+  studyTitle(id: number) {
+    return this.studies().find(s => s.studyId === id)?.title || `Study #${id}`;
+  }
+
+  setStudyId(id: number | null) { this.form.patchValue({ studyId: id }); }
 
   openCreate() {
-    this.form.reset({ studyId: null, externalId: '', name: '', dob: '', contactInfo: '' });
+    this.form.reset({ studyId: null, externalId: '', name: '', email: '', phone: '', dob: '' });
     this.open.set(true);
   }
 
   submit() {
     if (this.form.invalid) return;
-    this.api.create(this.form.getRawValue() as any).subscribe({
+    const v = this.form.getRawValue();
+    // backend has a single `contactInfo` field — combine email + phone
+    // const contactInfo = v.phone ? `${v.email} | ${v.phone}` : v.email;
+    this.api.create({
+      studyId: v.studyId!,
+      externalId: v.externalId,
+      name: v.name,
+      dob: v.dob,
+      phone: v.phone,
+      email: v.email
+    }).subscribe({
       next: () => { this.toast.success('Enrolled'); this.open.set(false); this.load(); },
       error: e => this.toast.error(e?.error?.message ?? 'Failed')
     });

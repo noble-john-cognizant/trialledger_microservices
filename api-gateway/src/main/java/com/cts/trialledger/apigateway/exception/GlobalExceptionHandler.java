@@ -44,20 +44,6 @@ public class GlobalExceptionHandler {
         );
     }
 
-    @ExceptionHandler(UserNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleUserNotFoundException(UserNotFoundException e) {
-        log.error(e.getMessage());
-        ErrorResponse res = new ErrorResponse(HttpStatus.NOT_FOUND.value(), "User Not Found", e.getMessage(), LocalDateTime.now());
-        return new ResponseEntity<>(res, HttpStatus.NOT_FOUND);
-    }
-
-    @ExceptionHandler(UserAlreadyExistException.class)
-    public ResponseEntity<ErrorResponse> handleUserAlreadyExistException(UserAlreadyExistException e) {
-        log.error(e.getMessage());
-        ErrorResponse res = new ErrorResponse(HttpStatus.CONFLICT.value(), "User Already Exist", e.getMessage(), LocalDateTime.now());
-        return new ResponseEntity<>(res, HttpStatus.CONFLICT);
-    }
-
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentialsException(BadCredentialsException ex) {
         log.error(ex.getMessage());

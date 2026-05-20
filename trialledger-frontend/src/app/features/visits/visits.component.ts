@@ -17,11 +17,13 @@ import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
 
 @Component({
   selector: 'tl-visits',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, StatusBadgeComponent, ModalComponent, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe,
+    StatusBadgeComponent, ModalComponent, EmptyStateComponent, SearchSelectComponent],
   templateUrl: './visits.component.html',
   styleUrls: ['./visits.component.css']
 })
@@ -58,6 +60,25 @@ export class VisitsComponent implements OnInit {
   canCapture = computed(() => this.auth.can('SOURCE_CREATE'));
   canVerify = computed(() => this.auth.can('SOURCE_VERIFY'));
   canViewSource = computed(() => this.auth.can('SOURCE_VIEW'));
+  canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
+  canListStudy = computed(() => this.auth.can('STUDY_LIST'));
+
+  participantOptions = computed<SearchOption[]>(() =>
+    this.participants().map(p => ({
+      id: p.participantId,
+      label: p.name,
+      subtitle: `${p.externalId} · Study #${p.studyId}`
+    }))
+  );
+  studyOptions = computed<SearchOption[]>(() =>
+    this.studies().map(s => ({
+      id: s.studyId, label: s.title,
+      subtitle: `${s.sponsor} · #${s.protocolNumber}`
+    }))
+  );
+
+  setParticipant(id: number | null) { this.form.patchValue({ participantId: id }); }
+  setStudy(id: number | null)       { this.form.patchValue({ studyId: id }); }
 
   form = this.fb.nonNullable.group({
     participantId: this.fb.control<number | null>(null, { validators: [Validators.required] }),
@@ -72,8 +93,8 @@ export class VisitsComponent implements OnInit {
   });
 
   ngOnInit() {
-    if (this.auth.can('PARTICIPANT_LIST')) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
-    if (this.auth.can('STUDY_LIST')) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
+    if (this.canListParticipants()) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
+    if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
     const url = new URL(window.location.href);
     const pid = url.searchParams.get('participantId');
     if (pid) { this.scope.set('participant'); this.participantId.set(+pid); this.load(); }

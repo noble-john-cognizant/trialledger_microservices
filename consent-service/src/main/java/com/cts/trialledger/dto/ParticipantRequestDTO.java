@@ -1,8 +1,8 @@
 package com.cts.trialledger.dto;
 
-import com.cts.trialledger.model.EnrollmentStatus;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDate;
 
@@ -18,9 +18,13 @@ public class ParticipantRequestDTO {
 
     @NotBlank
     private String externalId;
+    @NotBlank
+    private String email;
 
     private String name;
     private LocalDate dob;
-    private String contactInfo;
+    @NotBlank
+    @Length(min = 10, max = 10)
+    private String phone;
 
 }

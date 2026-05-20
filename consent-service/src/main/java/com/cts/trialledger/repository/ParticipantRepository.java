@@ -2,6 +2,7 @@ package com.cts.trialledger.repository;
 
 import com.cts.trialledger.entity.Participant;
 
+import com.cts.trialledger.model.EnrollmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -12,7 +13,7 @@ public interface ParticipantRepository extends JpaRepository<Participant, Long> 
 
     Long countByStudyId(Long studyId);
 
-    Long countByStudyIdAndEnrollmentStatus(Long studyId, String enrollmentStatus);
+    Long countByStudyIdAndEnrollmentStatus(Long studyId, EnrollmentStatus enrollmentStatus);
 
     boolean existsByContactInfo(String contactInfo);
 }

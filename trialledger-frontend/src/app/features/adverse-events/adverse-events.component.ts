@@ -15,11 +15,13 @@ import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
 
 @Component({
   selector: 'tl-adverse-events',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, StatusBadgeComponent, ModalComponent, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe,
+    StatusBadgeComponent, ModalComponent, EmptyStateComponent, SearchSelectComponent],
   templateUrl: './adverse-events.component.html',
   styleUrls: ['./adverse-events.component.css']
 })
@@ -53,6 +55,24 @@ export class AdverseEventsComponent implements OnInit {
   canDelete = computed(() => this.auth.can('AE_DELETE'));
   canFollowUp = computed(() => this.auth.can('AE_FOLLOWUP_CREATE'));
   canViewFollowUp = computed(() => this.auth.can('AE_FOLLOWUP_VIEW'));
+  canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
+  canListStudy = computed(() => this.auth.can('STUDY_LIST'));
+
+  participantOptions = computed<SearchOption[]>(() =>
+    this.participants().map(p => ({
+      id: p.participantId, label: p.name,
+      subtitle: `${p.externalId} · Study #${p.studyId}`
+    }))
+  );
+  studyOptions = computed<SearchOption[]>(() =>
+    this.studies().map(s => ({
+      id: s.studyId, label: s.title,
+      subtitle: `${s.sponsor} · #${s.protocolNumber}`
+    }))
+  );
+
+  setParticipant(id: number | null) { this.form.patchValue({ participantId: id }); }
+  setStudy(id: number | null)       { this.form.patchValue({ studyId: id }); }
 
   filtered = computed(() => {
     const q = this.search().toLowerCase();
@@ -78,8 +98,8 @@ export class AdverseEventsComponent implements OnInit {
 
   ngOnInit() {
     this.api.list().subscribe(v => this.list.set(v ?? []));
-    if (this.auth.can('PARTICIPANT_LIST')) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
-    if (this.auth.can('STUDY_LIST')) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
+    if (this.canListParticipants()) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
+    if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
   }
 
   openReport() {
