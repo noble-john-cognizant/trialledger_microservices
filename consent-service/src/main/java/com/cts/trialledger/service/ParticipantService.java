@@ -41,19 +41,11 @@ public class ParticipantService {
         //  HANDLE STUDY SERVICE (Feign Exception)
         try {
             studyClient.getStudyById(dto.getStudyId());
-            // Create participant in user table
-            RegisterDTO registerDto = new RegisterDTO(dto.getEmail(), "12345678",dto.getPhone(),dto.getName());
-            authClient.register(registerDto);
         } catch (FeignException.NotFound ex) {
-
             log.error("Study not found: {}", dto.getStudyId());
-
             throw new ResourceNotFoundException("Study not found with ID: " + dto.getStudyId());
-
         } catch (FeignException.ServiceUnavailable ex) {
-
             log.error("Study Service is unavailable");
-
             throw new RuntimeException("Study Service is currently unavailable");
         }
 
@@ -67,9 +59,10 @@ public class ParticipantService {
 
         try {
             saved = repo.save(p);
-
+            // Create participant in user table
+            RegisterDTO registerDto = new RegisterDTO(dto.getEmail(), "12345678", dto.getPhone(), dto.getName());
+            authClient.register(registerDto);
         } catch (DataIntegrityViolationException ex) {
-
             String message = ex.getMostSpecificCause().getMessage().toLowerCase();
 
             if (message.contains("contact") || message.contains("unique")) {
@@ -103,13 +96,9 @@ public class ParticipantService {
     }
 
     public EnrollmentStatsDTO getEnrollmentStatus(Long studyId) {
-        return EnrollmentStatsDTO.builder()
-                .studyId(studyId)
-                .totalParticipants(repo.countByStudyId(studyId))
-                .enrolledCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.ENROLLED))
-                .withdrawnCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.WITHDRAWN))
-                .build();
+        return EnrollmentStatsDTO.builder().studyId(studyId).totalParticipants(repo.countByStudyId(studyId)).enrolledCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.ENROLLED)).withdrawnCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.WITHDRAWN)).build();
     }
+
     //  GET BY ID
     public ParticipantResponseDTO getParticipantById(Long id) {
 
@@ -161,9 +150,7 @@ public class ParticipantService {
         participant.setEnrollmentStatus(status);
         Participant updatedEnrollmentStatus = repo.save(participant);
         //Record
-        Map<String, Object> map = Map.of("studyId", updatedEnrollmentStatus.getStudyId(),
-                "enrollmentStatus", updatedEnrollmentStatus.getEnrollmentStatus(),
-                "externalId", updatedEnrollmentStatus.getExternalId());
+        Map<String, Object> map = Map.of("studyId", updatedEnrollmentStatus.getStudyId(), "enrollmentStatus", updatedEnrollmentStatus.getEnrollmentStatus(), "externalId", updatedEnrollmentStatus.getExternalId());
 
         try {
             ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("UPDATE_PARTICIPANT", "participant", UserUtil.getCurrentUserId(), updatedEnrollmentStatus.getParticipantId(), new ObjectMapper().writeValueAsString(map));
@@ -189,9 +176,7 @@ public class ParticipantService {
         Participant saved = repo.save(participant);
 
         //Record
-        Map<String, Object> map = Map.of("studyId", saved.getStudyId(),
-                "enrollmentStatus", saved.getEnrollmentStatus(),
-                "externalId", saved.getExternalId());
+        Map<String, Object> map = Map.of("studyId", saved.getStudyId(), "enrollmentStatus", saved.getEnrollmentStatus(), "externalId", saved.getExternalId());
 
         try {
             ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CANCEL_PARTICIPANT", "participant", UserUtil.getCurrentUserId(), saved.getParticipantId(), new ObjectMapper().writeValueAsString(map));

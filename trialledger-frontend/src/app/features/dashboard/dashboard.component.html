@@ -1,3 +1,7 @@
+@if (isParticipant()) {
+  <tl-participant-home />
+} @else {
+
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
   <div>
     <h2 class="fw-bold mb-1">Welcome back, {{ user()?.name }} <span>👋</span></h2>
@@ -214,3 +218,5 @@
     </div>
   </div>
 </div>
+
+} <!-- /isParticipant else -->
