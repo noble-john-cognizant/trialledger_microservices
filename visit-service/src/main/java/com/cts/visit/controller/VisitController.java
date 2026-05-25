@@ -7,10 +7,12 @@ import com.cts.visit.enums.VisitStatus;
 import com.cts.visit.service.VisitService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -49,14 +51,25 @@ public class VisitController {
         );
     }
 
-    // 3. Update visit status
+    /**
+     * Update the status of a visit. When marking a visit COMPLETED, an
+     * optional {@code performedAt} timestamp may be supplied (defaults to
+     * "now" if absent). For non-COMPLETED transitions the parameter is
+     * ignored and any previously stored performedAt is cleared.
+     *
+     * Example:
+     *   PUT /api/visits/42/status?status=COMPLETED&performedAt=2026-05-25T14:30
+     */
     @PutMapping("/{visitId}/status")
     @PreAuthorize("hasAnyRole('PI','COORDINATOR')")
     public ResponseEntity<ApiResponseDto<VisitResponseDto>> updateVisitStatus(
             @PathVariable Long visitId,
-            @RequestParam VisitStatus status) throws JsonProcessingException {
+            @RequestParam VisitStatus status,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime performedAt
+    ) throws JsonProcessingException {
 
-        VisitResponseDto response = visitService.updateVisitStatus(visitId, status);
+        VisitResponseDto response = visitService.updateVisitStatus(visitId, status, performedAt);
 
         return ResponseEntity.ok(
                 new ApiResponseDto<>("SUCCESS", "Visit status updated successfully", response)

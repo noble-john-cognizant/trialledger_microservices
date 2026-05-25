@@ -26,10 +26,17 @@ export class VisitService {
     return this.http.get<ApiResponseDto<VisitResponseDto>>(`${this.base}/${id}`)
       .pipe(map(r => r.data));
   }
-  updateStatus(id: number, status: VisitStatus): Observable<VisitResponseDto> {
-    return this.http.put<ApiResponseDto<VisitResponseDto>>(`${this.base}/${id}/status`, null, {
-      params: new HttpParams().set('status', status)
-    }).pipe(map(r => r.data));
+  /**
+   * Update a visit's status. When marking it COMPLETED, an optional
+   * `performedAt` ISO-8601 datetime is sent so the backend records when
+   * the visit actually took place. For other statuses the timestamp is
+   * ignored by the server.
+   */
+  updateStatus(id: number, status: VisitStatus, performedAt?: string): Observable<VisitResponseDto> {
+    let params = new HttpParams().set('status', status);
+    if (performedAt) params = params.set('performedAt', performedAt);
+    return this.http.put<ApiResponseDto<VisitResponseDto>>(`${this.base}/${id}/status`, null, { params })
+      .pipe(map(r => r.data));
   }
   delete(id: number): Observable<VisitResponseDto> {
     return this.http.delete<ApiResponseDto<VisitResponseDto>>(`${this.base}/${id}`)

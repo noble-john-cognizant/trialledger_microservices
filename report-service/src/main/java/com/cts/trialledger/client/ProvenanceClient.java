@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
-@FeignClient(name = "PROVENANCE-SERVICE", path = "/api/provenance")
+@FeignClient(name = "PROVENANCE-SERVICE", path = "/api/provenance",
+        fallback = ProvenanceClientFallback.class)
 public interface ProvenanceClient {
 
     @GetMapping("/stats/{studyId}")

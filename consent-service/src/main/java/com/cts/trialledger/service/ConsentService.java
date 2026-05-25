@@ -1,5 +1,6 @@
 package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.AuthClient;
 import com.cts.trialledger.client.NotificationClient;
 import com.cts.trialledger.client.ProtocolClient;
 import com.cts.trialledger.client.ProvenanceClient;
@@ -16,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -34,6 +36,7 @@ public class ConsentService {
     private final ConsentWithdrawalRepository withdrawalRepository;
     private final ProtocolClient protocolClient;
     private final NotificationClient notificationClient;
+    private final AuthClient authClient;
 
     public ConsentResponseDTO createConsent(ConsentRequestDTO dto) throws Exception {
 
@@ -145,22 +148,40 @@ public class ConsentService {
 
         log.info("Fetching consents for participantId: {}", id);
 
-        if (!participantRepository.existsById(id)) {
-            throw new ResourceNotFoundException("Participant not found with ID: " + id);
-        }
+        Participant participant = participantRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Participant not found with ID: " + id));
 
-        List<ConsentResponseDTO> consents = consentRepository
+        // ----- Identity enforcement for the PARTICIPANT role -----------------
+        // A logged-in participant can ONLY read consents that belong to them.
+        // We resolve the caller's userId -> user.phone via auth-service and
+        // compare it against participant.contactInfo (which IS the phone the
+        // user registered with). For all other roles we allow the lookup.
+        var caller = UserUtil.getCurrentUser();
+        if ("PARTICIPANT".equalsIgnoreCase(caller.getRole())) {
+            UserDTO me;
+            try {
+                me = authClient.getUserById(caller.getUserId());
+            } catch (Exception ex) {
+                log.warn("Could not verify participant identity (auth-service issue): {}", ex.getMessage());
+                throw new AccessDeniedException("Could not verify your identity. Please try again.");
+            }
+            if (me == null || me.phone() == null
+                    || !me.phone().equals(participant.getContactInfo())) {
+                log.warn("Participant {} (user {}) tried to read consents of participant {}",
+                        me == null ? "?" : me.userId(), caller.getUserId(), id);
+                throw new AccessDeniedException(
+                        "You can only view your own consent records.");
+            }
+        }
+        // --------------------------------------------------------------------
+
+        // Empty list is a perfectly valid result (participant just hasn't
+        // signed any consent yet) — don't turn it into a 404 anymore.
+        return consentRepository
                 .findByParticipantId_ParticipantId(id)
                 .stream()
                 .map(ConsentMapper::toResponse)
                 .collect(Collectors.toList());
-
-        if (consents.isEmpty()) {
-            throw new ResourceNotFoundException(
-                    "No consents found for participant ID: " + id);
-        }
-
-        return consents;
     }
 
     public String withdrawConsent(ConsentWithdrawalDTO dto) {

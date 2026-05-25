@@ -75,11 +75,9 @@
                     </button>
                   }
                   @if (canUpdate()) {
-                    <select class="form-select form-select-sm d-inline-block me-1" style="width:auto"
-                      (change)="updateStatus(v, $any($event.target).value)">
-                      <option value="">Status…</option>
-                      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
-                    </select>
+                    <button class="btn btn-sm btn-light me-1" (click)="openStatus(v)" title="Update status">
+                      <i class="bi bi-pencil-square me-1"></i> Status
+                    </button>
                   }
                   @if (canDelete()) {
                     <button class="btn btn-sm btn-outline-danger" (click)="del(v)">
@@ -182,5 +180,41 @@
   <div modalFooter>
     <button class="btn btn-light" (click)="captureOpen.set(false)">Cancel</button>
     <button class="btn btn-primary" [disabled]="sourceForm.invalid" (click)="submitSource()">Save</button>
+  </div>
+</tl-modal>
+
+<!-- Update visit status. performedAt is shown only when the new status is COMPLETED. -->
+<tl-modal [open]="statusOpen()"
+  [title]="'Update status for visit #' + (pendingVisit()?.visitId ?? '')"
+  (close)="statusOpen.set(false)">
+  <form [formGroup]="statusForm" class="row g-3">
+    <div class="col-12">
+      <label class="form-label">New status</label>
+      <select class="form-select" formControlName="status">
+        <option value="">Select…</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+    </div>
+    @if (statusForm.controls.status.value === 'COMPLETED') {
+      <div class="col-12">
+        <label class="form-label">Performed at <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+          <input type="datetime-local" class="form-control" formControlName="performedAt">
+        </div>
+        <small class="form-text text-muted">
+          The date &amp; time the participant actually attended this visit. Defaults to now.
+        </small>
+      </div>
+    }
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="statusOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary"
+            [disabled]="!statusForm.controls.status.value
+                       || (statusForm.controls.status.value === 'COMPLETED' && !statusForm.controls.performedAt.value)"
+            (click)="submitStatus()">
+      Save
+    </button>
   </div>
 </tl-modal>

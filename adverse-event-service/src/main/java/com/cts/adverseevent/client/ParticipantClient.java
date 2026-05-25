@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 
-@FeignClient(name = "CONSENT-SERVICE")
+@FeignClient(name = "CONSENT-SERVICE",
+        fallback = ParticipantClientFallback.class)
 public interface ParticipantClient {
 
     @GetMapping("/api/participants/{id}")

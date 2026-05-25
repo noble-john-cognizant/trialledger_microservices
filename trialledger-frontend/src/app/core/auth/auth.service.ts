@@ -4,7 +4,7 @@ import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import {
-  LoginDTO, LoginResponseDTO, RegisterDTO,
+  LoginDTO, LoginResponseDTO,
   ForgotPasswordDTO, ForgotPasswordRequestOtpDTO, ForgotUsernameDTO
 } from '../models/auth.models';
 import { Role } from '../models/user.models';
@@ -31,9 +31,9 @@ export class AuthService {
     );
   }
 
-  register(dto: RegisterDTO): Observable<string> {
-    return this.http.post(`${this.api}/register`, dto, { responseType: 'text' });
-  }
+  // Self-service register was removed. Accounts are created either by an
+  // admin (via UserService.registerByAdmin) or implicitly when a coordinator
+  // enrolls a participant. The corresponding endpoint here is gone too.
 
   /** Step 1 — ask the server to generate an OTP and print it to its console. */
   requestPasswordResetOtp(dto: ForgotPasswordRequestOtpDTO): Observable<string> {

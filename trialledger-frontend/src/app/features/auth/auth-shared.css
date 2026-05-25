@@ -9,13 +9,23 @@
 }
 
 .auth-hero {
-  background:
-    radial-gradient(circle at 80% 0%, rgba(255,255,255,.18), transparent 55%),
-    radial-gradient(circle at 0% 100%, rgba(0,0,0,.25), transparent 50%),
-    linear-gradient(135deg, var(--tl-primary-dark), var(--tl-primary));
+  background: var(--tl-hero-gradient);
   color: #fff;
   padding: 4rem 3.5rem;
+  position: relative;
+  overflow: hidden;
 }
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255,255,255,.18), transparent 55%),
+    radial-gradient(circle at 0% 100%, rgba(0,0,0,.25), transparent 50%);
+  pointer-events: none;
+}
+.auth-hero > * { position: relative; }
+.auth-hero h1, .auth-hero p, .auth-hero .opacity-75 { color: #fff; }
 
 .brand-logo {
   width: 40px; height: 40px;
@@ -34,13 +44,20 @@
   border: 1px solid rgba(255, 255, 255, .15);
   padding: 1rem 1.1rem; border-radius: 12px;
   display: flex; align-items: flex-start; gap: .75rem;
+  backdrop-filter: blur(6px);
 }
 .feature i { font-size: 1.4rem; opacity: .9; }
 
 .auth-form {
-  display: flex; align-items: center; justify-content: center; padding: 2.5rem 1.5rem;
+  display: flex; align-items: center; justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: var(--tl-bg);
 }
-.auth-card { width: 100%; max-width: 460px; }
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+}
+.auth-card h2, .auth-card label, .auth-card .form-text { color: var(--tl-text); }
 
 /* ===== OTP step indicator ===== */
 .auth-steps {
@@ -71,7 +88,7 @@
   border-color: #fff;
 }
 .auth-steps li.done .dot {
-  background: var(--tl-primary);
+  background: var(--tl-accent);
   color: #fff;
 }
 

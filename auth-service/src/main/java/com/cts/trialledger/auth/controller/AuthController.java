@@ -3,13 +3,19 @@ package com.cts.trialledger.auth.controller;
 import com.cts.trialledger.auth.dto.*;
 import com.cts.trialledger.auth.service.AuthService;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+/**
+ * Public-facing auth endpoints. NOTE: self-service registration was removed
+ * by product decision — see {@code InternalAuthController} for the internal
+ * service-to-service register used by participant enrollment, and
+ * {@link com.cts.trialledger.auth.controller.UserController#registerByAdmin}
+ * for admin-driven user provisioning.
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -18,12 +24,6 @@ public class AuthController {
 
     public AuthController(AuthService authService) {
         this.authService = authService;
-    }
-
-    @PostMapping("/register")
-    public ResponseEntity<String> register(@Valid @RequestBody RegisterDTO dto) {
-        authService.register(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(dto.name() + " register successfully");
     }
 
     @PostMapping("/login")

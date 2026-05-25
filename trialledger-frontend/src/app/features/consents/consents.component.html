@@ -10,39 +10,61 @@
   }
 </div>
 
-<div class="card mb-3">
-  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
-    <select class="form-select" style="max-width:200px" (change)="scope.set($any($event.target).value)">
-      <option value="participant">By participant</option>
-      <option value="study">By study</option>
-    </select>
-
-    @if (scope() === 'participant') {
-      <div style="min-width:300px; max-width:400px; flex:1">
-        <tl-search-select
-          [items]="participantOptions()"
-          [value]="participantId()"
-          [canList]="canListParticipants()"
-          [placeholder]="'Search participant by name or ID…'"
-          [idPlaceholder]="'Enter participant ID'"
-          (valueChange)="participantId.set($event)" />
+<!--
+  Participants see only their own consents — no scope/study/search UI.
+  Staff roles get the full toolbar.
+-->
+@if (isParticipant()) {
+  <div class="card mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-shield-lock text-tl-primary"></i>
+        <span class="small text-muted">
+          Showing your consent records only.
+          @if (participantId()) {
+            <span class="badge bg-soft-primary ms-1">Participant #{{ participantId() }}</span>
+          }
+        </span>
       </div>
-    } @else {
-      <div style="min-width:300px; max-width:400px; flex:1">
-        <tl-search-select
-          [items]="studyOptions()"
-          [value]="studyId()"
-          [canList]="canListStudy()"
-          [placeholder]="'Search study by title or ID…'"
-          [idPlaceholder]="'Enter study ID'"
-          (valueChange)="studyId.set($event)" />
-      </div>
-    }
-
-    <button class="btn btn-outline-primary" (click)="load()">Load</button>
-    <span class="ms-auto small text-muted">{{ list().length }} records</span>
+      <span class="small text-muted">{{ list().length }} records</span>
+    </div>
   </div>
-</div>
+}
+@else {
+  <div class="card mb-3">
+    <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+      <select class="form-select" style="max-width:200px" (change)="scope.set($any($event.target).value)">
+        <option value="participant">By participant</option>
+        <option value="study">By study</option>
+      </select>
+
+      @if (scope() === 'participant') {
+        <div style="min-width:300px; max-width:400px; flex:1">
+          <tl-search-select
+            [items]="participantOptions()"
+            [value]="participantId()"
+            [canList]="canListParticipants()"
+            [placeholder]="'Search participant by name or ID…'"
+            [idPlaceholder]="'Enter participant ID'"
+            (valueChange)="participantId.set($event)" />
+        </div>
+      } @else {
+        <div style="min-width:300px; max-width:400px; flex:1">
+          <tl-search-select
+            [items]="studyOptions()"
+            [value]="studyId()"
+            [canList]="canListStudy()"
+            [placeholder]="'Search study by title or ID…'"
+            [idPlaceholder]="'Enter study ID'"
+            (valueChange)="studyId.set($event)" />
+        </div>
+      }
+
+      <button class="btn btn-outline-primary" (click)="load()">Load</button>
+      <span class="ms-auto small text-muted">{{ list().length }} records</span>
+    </div>
+  </div>
+}
 
 <div class="card">
   <div class="card-body p-0">

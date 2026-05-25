@@ -6,6 +6,7 @@ import { ToastsComponent } from '../../shared/toasts/toasts.component';
 import { UserProfileComponent } from '../../features/user-profile/user-profile.component';
 import { GlobalSearchComponent } from '../global-search/global-search.component';
 import { NotificationStateService } from '../../core/services/notification-state.service';
+import { ThemeService } from '../../core/services/theme.service';
 import { PermissionKey } from '../../core/auth/permissions';
 
 interface NavItem {
@@ -27,6 +28,8 @@ interface NavItem {
 export class ShellComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
   private notif = inject(NotificationStateService);
+  /** Exposed so the template can bind/toggle directly. */
+  theme = inject(ThemeService);
 
   collapsed = signal(false);
   profileOpen = signal(false);

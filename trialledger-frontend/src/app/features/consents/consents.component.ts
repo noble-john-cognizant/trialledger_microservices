@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ConsentService } from '../../core/services/consent.service';
 import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
+import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConsentMethod, ConsentResponseDTO } from '../../core/models/consent.models';
@@ -27,6 +28,7 @@ export class ConsentsComponent implements OnInit {
   private api = inject(ConsentService);
   private partApi = inject(ParticipantService);
   private studyApi = inject(StudyService);
+  private userApi = inject(UserService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
@@ -42,11 +44,21 @@ export class ConsentsComponent implements OnInit {
   withdrawOpen = signal(false);
   selected = signal<ConsentResponseDTO | null>(null);
 
+  /** Logged-in user has the PARTICIPANT role -> heavily restricted view. */
+  isParticipant = computed(() => this.auth.role() === 'PARTICIPANT');
+
   canCreate = computed(() => this.auth.can('CONSENT_CREATE'));
   canWithdraw = computed(() => this.auth.can('CONSENT_WITHDRAW'));
   canVerify = computed(() => this.auth.can('CONSENT_VERIFY'));
   canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
-  canListStudy = computed(() => this.auth.can('STUDY_LIST'));
+  /**
+   * Participants can never search by study id (product decision) — the
+   * permission already excludes them server-side, and we hide it in the
+   * UI for clarity.
+   */
+  canListStudy = computed(() =>
+    this.auth.can('STUDY_LIST') && !this.isParticipant()
+  );
 
   participantOptions = computed<SearchOption[]>(() =>
     this.participants().map(p => ({
@@ -77,11 +89,52 @@ export class ConsentsComponent implements OnInit {
   });
 
   ngOnInit() {
+    // For staff roles we load the global participant + study dropdowns.
     if (this.canListParticipants()) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
     if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
+
+    if (this.isParticipant()) {
+      // PARTICIPANT: lock the scope to "by participant", auto-resolve THEIR
+      // participantId via /users/{me} -> phone -> /participants/by-phone/{phone}
+      // and load only their own consents. No way to view other participants
+      // or search by study.
+      this.scope.set('participant');
+      this.autoResolveOwnParticipantId();
+      return;
+    }
+
+    // For staff: support deep-linking via ?participantId=N
     const url = new URL(window.location.href);
     const pid = url.searchParams.get('participantId');
     if (pid) { this.scope.set('participant'); this.participantId.set(+pid); this.load(); }
+  }
+
+  /**
+   * For a logged-in PARTICIPANT, look up their own participant record via
+   * the by-phone endpoint we built earlier. Once we know their id, load
+   * their consents.
+   */
+  private autoResolveOwnParticipantId() {
+    const u = this.auth.user();
+    if (!u) return;
+    this.userApi.get(u.userId).subscribe({
+      next: full => {
+        if (!full?.phone) {
+          this.toast.error('Your account is missing a phone number — contact your coordinator.');
+          return;
+        }
+        this.partApi.byPhone(full.phone).subscribe({
+          next: p => {
+            this.participantId.set(p.participantId);
+            this.load();
+          },
+          error: () => {
+            this.toast.error("We couldn't find an enrollment for your account yet.");
+          }
+        });
+      },
+      error: e => this.toast.error(extractErrorMessage(e, 'Could not load your profile.'))
+    });
   }
 
   participantName(id: number) {

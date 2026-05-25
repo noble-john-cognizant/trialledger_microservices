@@ -17,6 +17,7 @@ import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -94,13 +95,26 @@ public class VisitService {
     }
 
     // 3. Update visit status (Completed / Missed / Cancelled / Scheduled)
-    public VisitResponseDto updateVisitStatus(Long visitId, VisitStatus status) throws JsonProcessingException {
+    public VisitResponseDto updateVisitStatus(Long visitId, VisitStatus status, LocalDateTime performedAt)
+            throws JsonProcessingException {
 
         Visit visit = visitRepository.findById(visitId)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Visit not found"));
 
         visit.setStatus(status);
+
+        // Only COMPLETED carries a performedAt timestamp.
+        //   - Use the supplied value if provided
+        //   - Otherwise default to "now"
+        //   - For every other status, clear any previously stored performedAt
+        //     so the field accurately reflects the current state.
+        if (status == VisitStatus.COMPLETED) {
+            visit.setPerformedAt(performedAt != null ? performedAt : LocalDateTime.now());
+        } else {
+            visit.setPerformedAt(null);
+        }
+
         Visit updatedVisit = visitRepository.save(visit);
 
         if (status == VisitStatus.MISSED) {

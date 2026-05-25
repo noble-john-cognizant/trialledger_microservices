@@ -66,25 +66,25 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-<!--        &lt;!&ndash; Resilience4j &ndash;&gt;-->
+        <!--        &lt;!&ndash; Resilience4j &ndash;&gt;-->
 
-<!--        <dependency>-->
+        <!--        <dependency>-->
 
-<!--            <groupId>org.springframework.cloud</groupId>-->
+        <!--            <groupId>org.springframework.cloud</groupId>-->
 
-<!--            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>-->
+        <!--            <artifactId>spring-cloud-starter-circuitbreaker-resilience4j</artifactId>-->
 
-<!--        </dependency>-->
+        <!--        </dependency>-->
 
-<!--        &lt;!&ndash; Actuator (optional but useful) &ndash;&gt;-->
+        <!--        &lt;!&ndash; Actuator (optional but useful) &ndash;&gt;-->
 
-<!--        <dependency>-->
+        <!--        <dependency>-->
 
-<!--            <groupId>org.springframework.boot</groupId>-->
+        <!--            <groupId>org.springframework.boot</groupId>-->
 
-<!--            <artifactId>spring-boot-starter-actuator</artifactId>-->
+        <!--            <artifactId>spring-boot-starter-actuator</artifactId>-->
 
-<!--        </dependency>-->
+        <!--        </dependency>-->
 
 
         <!-- Web -->

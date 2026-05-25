@@ -52,6 +52,11 @@ export class VisitsComponent implements OnInit {
   sourceOpen = signal(false);
   captureOpen = signal(false);
 
+  /** State for the "Update status" modal. */
+  statusOpen = signal(false);
+  /** The visit currently being status-updated, if any. */
+  pendingVisit = signal<VisitResponseDto | null>(null);
+
   visit = signal<VisitResponseDto | null>(null);
   sourceData = signal<SourceDataResponseDto[]>([]);
 
@@ -93,6 +98,15 @@ export class VisitsComponent implements OnInit {
     collectedAt: ['', Validators.required]
   });
 
+  /**
+   * Form for the status-update modal. performedAt is required only when
+   * the user picks COMPLETED — see the @if in the template.
+   */
+  statusForm = this.fb.nonNullable.group({
+    status: ['' as '' | VisitStatus, Validators.required],
+    performedAt: ['']
+  });
+
   ngOnInit() {
     if (this.canListParticipants()) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
     if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
@@ -130,12 +144,53 @@ export class VisitsComponent implements OnInit {
     });
   }
 
-  updateStatus(v: VisitResponseDto, status: string) {
-    if (!status) return;
-    this.api.updateStatus(v.visitId, status as VisitStatus).subscribe({
-      next: () => { this.toast.success('Status updated'); this.load(); }
+  /** Open the status-update modal seeded with the visit's current status. */
+  openStatus(v: VisitResponseDto) {
+    this.pendingVisit.set(v);
+    this.statusForm.reset({
+      status: v.status,
+      performedAt: v.performedAt ? this.toLocalInput(v.performedAt) : this.toLocalInput(new Date().toISOString())
+    });
+    this.statusOpen.set(true);
+  }
+
+  /** Submit the status modal. Sends performedAt only when status === COMPLETED. */
+  submitStatus() {
+    const v = this.pendingVisit();
+    const raw = this.statusForm.getRawValue();
+    if (!v || !raw.status) return;
+
+    const newStatus = raw.status as VisitStatus;
+    const performedAt = newStatus === 'COMPLETED' ? this.toIsoLocal(raw.performedAt) : undefined;
+
+    if (newStatus === 'COMPLETED' && !performedAt) {
+      this.toast.error('Please supply when the visit was performed.');
+      return;
+    }
+
+    this.api.updateStatus(v.visitId, newStatus, performedAt).subscribe({
+      next: () => {
+        this.toast.success('Status updated');
+        this.statusOpen.set(false);
+        this.load();
+      },
+      error: e => this.toast.error(extractErrorMessage(e, 'Could not update status'))
     });
   }
+
+  /** Convert an ISO timestamp from the API to the format <input type=datetime-local> wants. */
+  private toLocalInput(iso: string): string {
+    // Strip seconds & timezone; "2026-05-25T14:30:00" -> "2026-05-25T14:30"
+    return (iso ?? '').slice(0, 16);
+  }
+
+  /** Convert datetime-local string back to a plain ISO string for the API. */
+  private toIsoLocal(local: string | null | undefined): string | undefined {
+    if (!local) return undefined;
+    // Send seconds — most Spring DateTimeFormatters expect it.
+    return local.length === 16 ? `${local}:00` : local;
+  }
+
   del(v: VisitResponseDto) {
     if (!confirm('Delete this visit?')) return;
     this.api.delete(v.visitId).subscribe({ next: () => { this.toast.success('Deleted'); this.load(); } });

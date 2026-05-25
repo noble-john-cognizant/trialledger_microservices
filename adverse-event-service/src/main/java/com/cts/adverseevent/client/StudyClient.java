@@ -6,7 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 
-@FeignClient(name = "STUDY-SERVICE")
+@FeignClient(name = "STUDY-SERVICE",
+        fallback = StudyClientFallback.class)
 public interface StudyClient {
 
     @GetMapping("/api/studies/{studyId}")

@@ -12,7 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
  * The `name` MUST match the spring.application.name registered on Eureka
  * by participant-service (i.e. "participant-service").
  */
-@FeignClient(name = "CONSENT-SERVICE")
+@FeignClient(name = "CONSENT-SERVICE",
+        fallback = ParticipantClientFallback.class)
 public interface ParticipantClient {
 
     @GetMapping("/api/participants/{Id}")

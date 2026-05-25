@@ -5,7 +5,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "STUDY-SERVICE", path = "/api/studies")
+@FeignClient(name = "STUDY-SERVICE", path = "/api/studies",
+        fallback = StudyClientFallback.class)
 public interface StudyClient {
     @GetMapping("/{studyId}")
     StudyResponseDTO getStudyById(@PathVariable("studyId") Long studyId);

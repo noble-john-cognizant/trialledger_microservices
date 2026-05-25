@@ -5,7 +5,8 @@ import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
-@FeignClient(name = "CONSENT-SERVICE", path = "/api/participants")
+@FeignClient(name = "CONSENT-SERVICE", path = "/api/participants",
+        fallback = ConsentClientFallback.class)
 public interface ConsentClient {
 
     @GetMapping("/stats/{studyId}")

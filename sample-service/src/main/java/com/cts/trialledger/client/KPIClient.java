@@ -9,7 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "KPI-SERVICE", path = "/api/kpis")
+@FeignClient(name = "KPI-SERVICE", path = "/api/kpis",
+        fallback = KPIClientFallback.class)
 public interface KPIClient {
 
     @PatchMapping("/{kpiId}/refresh")
