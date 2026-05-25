@@ -42,6 +42,25 @@ public class NotificationService {
 
         Notification saved = repository.save(notification);
 
+        // If a participantUserId is provided and is different from the actor,
+        // also create a copy for the participant so they see it in their feed
+        if (dto.getParticipantUserId() != null
+                && !dto.getParticipantUserId().equals(dto.getUserId())) {
+
+            log.info("Also notifying participantUserId: {}", dto.getParticipantUserId());
+
+            Notification participantCopy = Notification.builder()
+                    .userId(dto.getParticipantUserId())
+                    .entityId(dto.getEntityId())
+                    .message(dto.getMessage())
+                    .category(dto.getCategory())
+                    .status(NotificationStatus.UNREAD)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+
+            repository.save(participantCopy);
+        }
+
         log.info("Notification created successfully with ID: {}",
                 saved.getNotificationId());
 

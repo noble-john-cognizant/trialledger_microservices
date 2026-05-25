@@ -12,6 +12,8 @@ public class NotificationRequestDTO {
 
     private Long userId;
 
+    private Long participantUserId;
+
     private Long entityId;
 
     private String message;

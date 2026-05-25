@@ -1,8 +1,6 @@
 package com.cts.trialledger.service;
 
-import com.cts.trialledger.client.ParticipantClient;
-import com.cts.trialledger.client.ProvenanceClient;
-import com.cts.trialledger.client.StudyClient;
+import com.cts.trialledger.client.*;
 import com.cts.trialledger.dto.*;
 import com.cts.trialledger.entity.ChainOfCustody;
 import com.cts.trialledger.entity.Sample;
@@ -16,18 +14,17 @@ import com.cts.trialledger.model.SampleStatus;
 import com.cts.trialledger.repository.AssayRunRepository;
 import com.cts.trialledger.repository.ChainOfCustodyRepository;
 import com.cts.trialledger.repository.SampleRepository;
-//import com.cts.trialledger.service.AuditService;
-//import com.cts.trialledger.util.AuthValidator;
-//import com.cts.trialledger.util.ProvenanceRecordUtil;
 import com.cts.trialledger.repository.SampleStorageRepository;
 import com.cts.trialledger.util.UserUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SampleServiceImpl implements SampleService {
@@ -43,6 +40,8 @@ public class SampleServiceImpl implements SampleService {
     private final SampleStorageRepository sampleStorageRepository;
     private final AssayRunRepository assayRunRepository;
     private final AssayRunMapper assayRunMapper;
+    private final KPIClient kpiClient;
+    private final NotificationClient notificationClient;
 
     @Override
     public SampleResponseDTO createSample(SampleRequestDTO requestDTO) {
@@ -52,19 +51,46 @@ public class SampleServiceImpl implements SampleService {
         validateParticipant(requestDTO.getParticipantId(), requestDTO.getStudyId());
         Sample saved = sampleRepository.save(sample);
 
+        try {
+            kpiClient.refreshAllKPIsForStudy(saved.getStudyId());
+        } catch (Exception e) {
+            log.warn("KPI refresh failed after sample save: {}", e.getMessage());
+        }
 
-        Map<String, Object> map = Map.of(
-                "studyId", saved.getStudyId(),
-                "sampleType", saved.getSampleType(),
-                "collectedBy", saved.getCollectedBy(),
-                "status", saved.getStatus(),
-                "initialLocation", saved.getInitialLocation()
-        );
-        ProvenanceRequestDTO request = new ProvenanceRequestDTO("CREATE_SAMPLE",
-                "sample", UserUtil.getCurrentUserId(),
-                saved.getSampleId(),
-                new ObjectMapper().writeValueAsString(map));
-        provenanceClient.recordProvenanceData(request);
+        try {
+            Map<String, Object> map = Map.of(
+                    "studyId", saved.getStudyId(),
+                    "sampleType", saved.getSampleType(),
+                    "collectedBy", saved.getCollectedBy(),
+                    "status", saved.getStatus(),
+                    "initialLocation", saved.getInitialLocation()
+            );
+            ProvenanceRequestDTO request = new ProvenanceRequestDTO(
+                    "CREATE_SAMPLE", "sample",
+                    UserUtil.getCurrentUserId(),
+                    saved.getSampleId(),
+                    new ObjectMapper().writeValueAsString(map)
+            );
+            provenanceClient.recordProvenanceData(request);
+        } catch (Exception e) {
+            log.warn("Failed to record sample provenance: {}", e.getMessage());
+        }
+
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(saved.getSampleId())
+                            .message("New sample collected: ID " + saved.getSampleId()
+                                    + " | Type: " + saved.getSampleType()
+                                    + " | Participant ID: " + saved.getParticipantId()
+                                    + " | Study ID: " + saved.getStudyId())
+                            .category("SAMPLE")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send sample notification: {}", e.getMessage());
+        }
 
         return sampleMapper.toResponseDTO(saved);
     }
@@ -136,8 +162,6 @@ public class SampleServiceImpl implements SampleService {
                     "No samples found with status: " + status
             );
         }
-
-
         return samples;
     }
 
@@ -153,7 +177,6 @@ public class SampleServiceImpl implements SampleService {
             throw new ResourceNotFoundException(
                     "No samples found for study ID: " + studyId);
         }
-
         return samples;
     }
 

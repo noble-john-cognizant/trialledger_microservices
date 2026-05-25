@@ -96,7 +96,12 @@ public class ParticipantService {
     }
 
     public EnrollmentStatsDTO getEnrollmentStatus(Long studyId) {
-        return EnrollmentStatsDTO.builder().studyId(studyId).totalParticipants(repo.countByStudyId(studyId)).enrolledCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.ENROLLED)).withdrawnCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.WITHDRAWN)).build();
+        return EnrollmentStatsDTO.builder()
+                .studyId(studyId)
+                .totalParticipants(repo.countByStudyId(studyId))
+                .enrolledCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.ENROLLED))
+                .withdrawnCount(repo.countByStudyIdAndEnrollmentStatus(studyId, EnrollmentStatus.WITHDRAWN))
+                .build();
     }
 
     //  GET BY ID
@@ -150,7 +155,9 @@ public class ParticipantService {
         participant.setEnrollmentStatus(status);
         Participant updatedEnrollmentStatus = repo.save(participant);
         //Record
-        Map<String, Object> map = Map.of("studyId", updatedEnrollmentStatus.getStudyId(), "enrollmentStatus", updatedEnrollmentStatus.getEnrollmentStatus(), "externalId", updatedEnrollmentStatus.getExternalId());
+        Map<String, Object> map = Map.of("studyId", updatedEnrollmentStatus.getStudyId(),
+                "enrollmentStatus", updatedEnrollmentStatus.getEnrollmentStatus(),
+                "externalId", updatedEnrollmentStatus.getExternalId());
 
         try {
             ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("UPDATE_PARTICIPANT", "participant", UserUtil.getCurrentUserId(), updatedEnrollmentStatus.getParticipantId(), new ObjectMapper().writeValueAsString(map));
@@ -176,7 +183,9 @@ public class ParticipantService {
         Participant saved = repo.save(participant);
 
         //Record
-        Map<String, Object> map = Map.of("studyId", saved.getStudyId(), "enrollmentStatus", saved.getEnrollmentStatus(), "externalId", saved.getExternalId());
+        Map<String, Object> map = Map.of("studyId", saved.getStudyId(),
+                "enrollmentStatus", saved.getEnrollmentStatus(),
+                "externalId", saved.getExternalId());
 
         try {
             ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CANCEL_PARTICIPANT", "participant", UserUtil.getCurrentUserId(), saved.getParticipantId(), new ObjectMapper().writeValueAsString(map));

@@ -1,5 +1,6 @@
 package com.cts.visit.service;
 
+import com.cts.visit.client.NotificationClient;
 import com.cts.visit.client.ParticipantClient;
 import com.cts.visit.client.ProvenanceClient;
 import com.cts.visit.client.StudyClient;
@@ -13,12 +14,13 @@ import com.cts.visit.util.UserUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import feign.FeignException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+@Slf4j
 @Service
 public class VisitService {
 
@@ -26,14 +28,16 @@ public class VisitService {
     private final StudyClient studyClient;
     private final ParticipantClient participantClient;
     private final ProvenanceClient provenanceClient;
+    private final NotificationClient  notificationClient;
 
     public VisitService(VisitRepository visitRepository,
                         StudyClient studyClient,
-                        ParticipantClient participantClient, ProvenanceClient provenanceClient) {
+                        ParticipantClient participantClient, ProvenanceClient provenanceClient, NotificationClient notificationClient) {
         this.visitRepository = visitRepository;
         this.studyClient = studyClient;
         this.participantClient = participantClient;
         this.provenanceClient = provenanceClient;
+        this.notificationClient = notificationClient;
     }
 
     // 1. Schedule a new visit
@@ -49,6 +53,21 @@ public class VisitService {
         visit.setStatus(VisitStatus.SCHEDULED); // default status
 
         Visit savedVisit = visitRepository.save(visit);
+
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(savedVisit.getVisitId())
+                            .message("Visit scheduled for Participant ID: " + savedVisit.getParticipantId()
+                                    + " | Type: " + savedVisit.getVisitType()
+                                    + " | Scheduled at: " + savedVisit.getScheduledAt())
+                            .category("VISIT")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send visit scheduled notification: {}", e.getMessage());
+        }
 
         //Record
         Map<String, Object> map = Map.of("participantId", visit.getParticipantId(),
@@ -83,6 +102,24 @@ public class VisitService {
 
         visit.setStatus(status);
         Visit updatedVisit = visitRepository.save(visit);
+
+        if (status == VisitStatus.MISSED) {
+            try {
+                notificationClient.createNotification(
+                        NotificationRequestDTO.builder()
+                                .userId(UserUtil.getCurrentUserId())
+                                .entityId(visitId)
+                                .message("ALERT: Visit ID " + visitId
+                                        + " has been marked as MISSED for Participant ID: "
+                                        + visit.getParticipantId())
+                                .category("VISIT")
+                                .build()
+                );
+            } catch (Exception e) {
+                log.warn("Failed to send visit missed notification: {}", e.getMessage());
+            }
+        }
+
         //Record
         Map<String, Object> map = Map.of("participantId", updatedVisit.getParticipantId(),
                 "visitType", updatedVisit.getVisitType(),

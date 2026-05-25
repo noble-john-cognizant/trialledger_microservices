@@ -1,5 +1,6 @@
 package com.cts.adverseevent.service;
 
+import com.cts.adverseevent.client.NotificationClient;
 import com.cts.adverseevent.client.ParticipantClient;
 import com.cts.adverseevent.client.ProvenanceClient;
 import com.cts.adverseevent.client.StudyClient;
@@ -22,6 +23,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -29,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdverseEventService {
@@ -40,7 +43,7 @@ public class AdverseEventService {
     private final ProvenanceClient provenanceClient;
     private final StudyClient studyClient;
     private final ParticipantClient participantClient;
-
+    private final NotificationClient notificationClient;
 
     public List<AdverseEventResponseDto> getAllAE() {
         return adverseEventRepository.findByIsDeletedFalse()
@@ -99,8 +102,27 @@ public class AdverseEventService {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         String metadata = mapper.writeValueAsString(map);
-        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CREATE_AE", "adverse_event", UserUtil.getCurrentUserId(), saved.getId(), metadata);
-        provenanceClient.recordProvenanceData(requestDTO);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
+                "CREATE_AE", "adverse_event",
+                UserUtil.getCurrentUserId(), saved.getId(), metadata);
+         provenanceClient.recordProvenanceData(requestDTO);
+
+        // Send notification
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(saved.getId())
+                            .message("New Adverse Event reported (Severity: " + saved.getSeverity()
+                                    + ") for Participant ID: " + saved.getParticipantId()
+                                    + " in Study ID: " + saved.getStudyId())
+                            .category("AE")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send AE created notification: {}", e.getMessage());
+        }
+
         return response;
     }
 
@@ -118,8 +140,25 @@ public class AdverseEventService {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         String metadata = mapper.writeValueAsString(map);
-        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("UPDATE_AE_STATUS", "adverse_event", UserUtil.getCurrentUserId(), saved.getId(), metadata);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
+                "UPDATE_AE_STATUS", "adverse_event",
+                UserUtil.getCurrentUserId(), saved.getId(), metadata);
         provenanceClient.recordProvenanceData(requestDTO);
+
+        // Send notification
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(saved.getId())
+                            .message("Adverse Event ID " + saved.getId()
+                                    + " status updated to: " + saved.getStatus())
+                            .category("AE")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send AE status update notification: {}", e.getMessage());
+        }
 
         return response;
     }
@@ -138,8 +177,26 @@ public class AdverseEventService {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         String metadata = mapper.writeValueAsString(map);
-        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("UPDATE_AE_SEVERITY", "adverse_event", UserUtil.getCurrentUserId(), saved.getId(), metadata);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
+                "UPDATE_AE_SEVERITY", "adverse_event",
+                UserUtil.getCurrentUserId(), saved.getId(), metadata);
         provenanceClient.recordProvenanceData(requestDTO);
+
+        // Send notification
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(saved.getId())
+                            .message("ALERT: Adverse Event ID " + saved.getId()
+                                    + " severity escalated to: " + saved.getSeverity()
+                                    + " for Participant ID: " + saved.getParticipantId())
+                            .category("AE")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send AE severity update notification: {}", e.getMessage());
+        }
 
         return response;
     }
@@ -164,13 +221,14 @@ public class AdverseEventService {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         String metadata = mapper.writeValueAsString(map);
-        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("DELETE_AE", "adverse_event", UserUtil.getCurrentUserId(), ae.getId(), metadata);
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
+                "DELETE_AE", "adverse_event",
+                UserUtil.getCurrentUserId(), ae.getId(), metadata);
         provenanceClient.recordProvenanceData(requestDTO);
 
         return "Adverse Event with ID " + aeId + " deleted along with "
                 + followUps.size() + " follow-up(s)";
     }
-
 
     public ApiResponseDto getFullAdverseEvent(Long aeId) {
         AdverseEvent ae = adverseEventRepository.findByIdAndIsDeletedFalse(aeId)

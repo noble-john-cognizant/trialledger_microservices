@@ -18,6 +18,8 @@ public class KPI {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long kpiId;
 
+    private Long studyId;
+
     @Column(nullable = false)
     private String name;
 

@@ -1,8 +1,10 @@
 package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.NotificationClient;
 import com.cts.trialledger.client.ProvenanceClient;
 import com.cts.trialledger.dto.ChainOfCustodyRequestDTO;
 import com.cts.trialledger.dto.ChainOfCustodyResponseDTO;
+import com.cts.trialledger.dto.NotificationRequestDTO;
 import com.cts.trialledger.dto.ProvenanceRequestDTO;
 import com.cts.trialledger.entity.ChainOfCustody;
 import com.cts.trialledger.entity.Sample;
@@ -13,6 +15,7 @@ import com.cts.trialledger.repository.ChainOfCustodyRepository;
 import com.cts.trialledger.repository.SampleRepository;
 import com.cts.trialledger.util.UserUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.ObjectMapper;
 
@@ -20,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
@@ -28,6 +32,7 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
     private final SampleRepository sampleRepository;
     private final ProvenanceClient provenanceClient;
     private final ChainOfCustodyMapper chainOfCustodyMapper;
+    private final NotificationClient notificationClient;
 
     @Override
     public ChainOfCustodyResponseDTO transferCustody(Long sampleId, ChainOfCustodyRequestDTO requestDTO) {
@@ -47,7 +52,6 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
 
         ChainOfCustody saved = chainOfCustodyRepository.save(coc);
 
-
         Map<String, Object> map = Map.of(
                 "fromUser", saved.getFromUser(),
                 "toUser", saved.getToUser(),
@@ -64,6 +68,25 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                 new ObjectMapper().writeValueAsString(map)
         );
         provenanceClient.recordProvenanceData(dto);
+
+        try {
+            NotificationRequestDTO notifDto = NotificationRequestDTO.builder()
+                    .userId(UserUtil.getCurrentUserId())
+                    .entityId(sampleId)
+                    .message("Sample chain-of-custody transfer: Sample ID " + sampleId
+                            + " transferred from User " + saved.getFromUser()
+                            + " (" + saved.getFromLocation() + ")"
+                            + " → User " + saved.getToUser()
+                            + " (" + saved.getToLocation() + ")")
+                    .category("SAMPLE")
+                    .build();
+
+            notificationClient.createNotification(notifDto);
+            log.info("Notification sent for custody transfer, Sample ID: {}", sampleId);
+        } catch (Exception e) {
+            log.error("Failed to send notification for custody transfer: {}", e.getMessage());
+        }
+
         return chainOfCustodyMapper.toResponseDTO(saved);
     }
 

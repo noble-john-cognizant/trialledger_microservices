@@ -15,6 +15,7 @@ public class KPIMapper {
                 .target(dto.getTarget())
                 .currentValue(0.0)
                 .reportingPeriod(dto.getReportingPeriod())
+                .studyId(dto.getStudyId())
                 .build();
     }
 
@@ -26,6 +27,7 @@ public class KPIMapper {
                 .target(k.getTarget())
                 .currentValue(k.getCurrentValue())
                 .reportingPeriod(k.getReportingPeriod())
+                .studyId(k.getStudyId())
                 .build();
     }
 }

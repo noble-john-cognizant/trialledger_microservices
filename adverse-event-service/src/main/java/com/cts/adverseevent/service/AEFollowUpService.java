@@ -1,8 +1,10 @@
 package com.cts.adverseevent.service;
 
+import com.cts.adverseevent.client.NotificationClient;
 import com.cts.adverseevent.client.ProvenanceClient;
 import com.cts.adverseevent.dto.AEFollowUpRequestDto;
 import com.cts.adverseevent.dto.AEFollowUpResponseDto;
+import com.cts.adverseevent.dto.NotificationRequestDTO;
 import com.cts.adverseevent.dto.ProvenanceRequestDTO;
 import com.cts.adverseevent.entity.AEFollowUp;
 import com.cts.adverseevent.entity.AdverseEvent;
@@ -15,12 +17,14 @@ import com.cts.adverseevent.util.UserUtil;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class AEFollowUpService {
 
@@ -28,14 +32,18 @@ public class AEFollowUpService {
     private final AdverseEventRepository adverseEventRepository;
     private final AEFollowUpMapper followUpMapper;
     private final ProvenanceClient provenanceClient;
+    private final NotificationClient notificationClient;
 
     public AEFollowUpService(AEFollowUpRepository followUpRepository,
                              AdverseEventRepository adverseEventRepository,
-                             AEFollowUpMapper followUpMapper, ProvenanceClient provenanceClient) {
+                             AEFollowUpMapper followUpMapper,
+                             ProvenanceClient provenanceClient,
+                             NotificationClient notificationClient) {
         this.followUpRepository = followUpRepository;
         this.adverseEventRepository = adverseEventRepository;
         this.followUpMapper = followUpMapper;
         this.provenanceClient = provenanceClient;
+        this.notificationClient = notificationClient;
     }
 
     public AEFollowUpResponseDto addFollowUp(Long aeId, AEFollowUpRequestDto dto) throws JsonProcessingException {
@@ -47,11 +55,34 @@ public class AEFollowUpService {
         AEFollowUpResponseDto response = followUpMapper.toResponse(saved);
 
         // Record in provenance table
-        Map<String, Object> map = Map.of("follow_up", saved.getId(), "adverse_event_id", aeId, "performedBy", saved.getPerformedById(), "is_deleted", followUp.getIsDeleted());
+        Map<String, Object> map = Map.of(
+                "follow_up", saved.getId(),
+                "adverse_event_id", aeId,
+                "performedBy", saved.getPerformedById(),
+                "is_deleted", followUp.getIsDeleted()
+        );
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
-        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("CREATE_AE_FOLLOW_UP", "ae_follow_up", UserUtil.getCurrentUserId(), saved.getId(), mapper.writeValueAsString(map));
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
+                "CREATE_AE_FOLLOW_UP", "ae_follow_up",
+                UserUtil.getCurrentUserId(), saved.getId(),
+                mapper.writeValueAsString(map));
         provenanceClient.recordProvenanceData(requestDTO);
+
+        // Send notification
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(aeId)
+                            .message("Follow-up action recorded for Adverse Event ID: " + aeId
+                                    + " | Action: " + dto.getActionTaken())
+                            .category("AE")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send follow-up notification: {}", e.getMessage());
+        }
 
         return response;
     }
@@ -73,10 +104,16 @@ public class AEFollowUpService {
         followUpRepository.save(followUp);
 
         // Record in provenance table
-        Map<String, Object> map = Map.of("follow_up", followUpId, "is_deleted", followUp.getIsDeleted());
+        Map<String, Object> map = Map.of(
+                "follow_up", followUpId,
+                "is_deleted", followUp.getIsDeleted()
+        );
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
-        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO("DELETE_AE_FOLLOW_UP", "ae_follow_up", UserUtil.getCurrentUserId(), followUp.getId(), mapper.writeValueAsString(map));
+        ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
+                "DELETE_AE_FOLLOW_UP", "ae_follow_up",
+                UserUtil.getCurrentUserId(), followUp.getId(),
+                mapper.writeValueAsString(map));
         provenanceClient.recordProvenanceData(requestDTO);
 
         return "Follow-up with ID " + followUpId + " deleted";

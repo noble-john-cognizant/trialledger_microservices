@@ -1,11 +1,14 @@
 package com.cts.trialledger.client;
 
-import com.cts.trialledger.model.NotificationCategory;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class NotificationRequestDTO {
 
     private Long userId;
@@ -14,5 +17,5 @@ public class NotificationRequestDTO {
 
     private String message;
 
-    private NotificationCategory category;
+    private String category;
 }

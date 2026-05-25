@@ -16,6 +16,9 @@ public class KPIRequestDTO {
     @NotBlank(message = "KPI name is required")
     private String name;
 
+    @NotNull(message = "Study ID is required")
+    private Long studyId;
+
     @NotBlank(message = "KPI definition is required")
     private String definition;
 

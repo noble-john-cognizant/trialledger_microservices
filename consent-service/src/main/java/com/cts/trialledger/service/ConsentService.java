@@ -1,8 +1,13 @@
 package com.cts.trialledger.service;
 
+import com.cts.trialledger.client.NotificationClient;
+import com.cts.trialledger.client.NotificationRequestDTO;
 import com.cts.trialledger.client.ProtocolClient;
 import com.cts.trialledger.client.ProvenanceClient;
-import com.cts.trialledger.dto.*;
+import com.cts.trialledger.dto.ConsentRequestDTO;
+import com.cts.trialledger.dto.ConsentResponseDTO;
+import com.cts.trialledger.dto.ConsentWithdrawalDTO;
+import com.cts.trialledger.dto.ProvenanceRequestDTO;
 import com.cts.trialledger.entity.*;
 import com.cts.trialledger.exception.ResourceNotFoundException;
 import com.cts.trialledger.mapper.ConsentMapper;
@@ -11,11 +16,11 @@ import com.cts.trialledger.model.EnrollmentStatus;
 import com.cts.trialledger.repository.*;
 import com.cts.trialledger.util.HashUtil;
 import com.cts.trialledger.util.UserUtil;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import feign.FeignException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -32,7 +37,7 @@ public class ConsentService {
     private final ParticipantRepository participantRepository;
     private final ConsentWithdrawalRepository withdrawalRepository;
     private final ProtocolClient protocolClient;
-//    private final NotificationClient notificationClient;
+    private final NotificationClient notificationClient;
 
     public ConsentResponseDTO createConsent(ConsentRequestDTO dto) throws Exception {
 
@@ -44,18 +49,17 @@ public class ConsentService {
                         new ResourceNotFoundException("Participant not found with ID: " + dto.getParticipantId())
                 );
 
-        //  BLOCK withdrawn participants
+        // BLOCK withdrawn participants
         if (p.getEnrollmentStatus() == EnrollmentStatus.WITHDRAWN) {
             throw new RuntimeException("Cannot create consent for withdrawn participant");
         }
 
-//  BLOCK completed participants
+        // BLOCK completed participants
         if (p.getEnrollmentStatus() == EnrollmentStatus.COMPLETED) {
             throw new RuntimeException("Cannot create consent for completed participant");
         }
 
-
-//  CHECK ACTIVE CONSENT
+        // CHECK ACTIVE CONSENT
         boolean activeExists = consentRepository
                 .existsByParticipantId_ParticipantIdAndProtocolIdAndStatus(
                         dto.getParticipantId(),
@@ -71,16 +75,13 @@ public class ConsentService {
         try {
             protocolClient.getProtocolVersion(dto.getProtocolId());
         } catch (FeignException.NotFound ex) {
-
             throw new ResourceNotFoundException(
                     "Protocol not found for protocolId: "
                             + dto.getProtocolId()
                             + " and version: "
                             + dto.getVersionNumber()
             );
-
         } catch (FeignException.Unauthorized ex) {
-
             throw new ResourceNotFoundException(
                     "Protocol not found for protocolId: "
                             + dto.getProtocolId()
@@ -89,12 +90,10 @@ public class ConsentService {
             );
         }
 
-        //  AUTO ENROLL PARTICIPANT (KEY LOGIC)
-
+        // AUTO ENROLL PARTICIPANT
         ConsentRecord c = ConsentMapper.toEntity(dto, p);
         c.setConsentDate(java.time.LocalDateTime.now());
         c.setSignatureHash(HashUtil.generateSHA256(dto.getSignedDocumentUri()));
-
         c.setStatus(ConsentStatus.ACTIVE);
 
         ConsentRecord saved = consentRepository.save(c);
@@ -104,6 +103,7 @@ public class ConsentService {
 
         log.info("Consent created successfully with ID: {}", saved.getConsentId());
 
+        // Record provenance
         Map<String, Object> map = Map.of(
                 "consentMethod", saved.getConsentMethod(),
                 "status", saved.getStatus(),
@@ -113,7 +113,6 @@ public class ConsentService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-
             ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
                     "CREATE_CONSENT",
                     "consent_record",
@@ -125,6 +124,22 @@ public class ConsentService {
             provenanceClient.recordProvenanceData(requestDTO);
         } catch (Exception e) {
             log.error("Error while recording provenance: {}", e.getMessage());
+        }
+
+        // Send notification
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(saved.getConsentId())
+                            .message("Consent recorded successfully for Participant ID: "
+                                    + saved.getParticipantId()
+                                    + " under Protocol ID: " + saved.getProtocolId())
+                            .category("CONSENT")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send consent notification: {}", e.getMessage());
         }
 
         return ConsentMapper.toResponse(saved);
@@ -180,6 +195,7 @@ public class ConsentService {
 
         log.info("Consent withdrawn successfully");
 
+        // Record provenance
         Map<String, Object> map = Map.of(
                 "consentId", saved.getConsentId(),
                 "withdrawnBy", saved.getWithdrawnBy()
@@ -187,7 +203,6 @@ public class ConsentService {
 
         try {
             ObjectMapper mapper = new ObjectMapper();
-
             ProvenanceRequestDTO requestDTO = new ProvenanceRequestDTO(
                     "WITHDRAW_CONSENT",
                     "consent_withdrawal",
@@ -199,6 +214,22 @@ public class ConsentService {
             provenanceClient.recordProvenanceData(requestDTO);
         } catch (Exception e) {
             log.error("Error while recording provenance: {}", e.getMessage());
+        }
+
+        // Send notification
+        try {
+            notificationClient.createNotification(
+                    NotificationRequestDTO.builder()
+                            .userId(UserUtil.getCurrentUserId())
+                            .entityId(dto.getConsentId())
+                            .message("Consent withdrawn for Participant by user ID: "
+                                    + UserUtil.getCurrentUserId()
+                                    + " | Reason: " + dto.getReason())
+                            .category("CONSENT")
+                            .build()
+            );
+        } catch (Exception e) {
+            log.warn("Failed to send withdrawal notification: {}", e.getMessage());
         }
 
         return "Withdrawn successfully";
