@@ -1,13 +1,9 @@
 package com.cts.trialledger.service;
 
 import com.cts.trialledger.client.NotificationClient;
-import com.cts.trialledger.client.NotificationRequestDTO;
 import com.cts.trialledger.client.ProtocolClient;
 import com.cts.trialledger.client.ProvenanceClient;
-import com.cts.trialledger.dto.ConsentRequestDTO;
-import com.cts.trialledger.dto.ConsentResponseDTO;
-import com.cts.trialledger.dto.ConsentWithdrawalDTO;
-import com.cts.trialledger.dto.ProvenanceRequestDTO;
+import com.cts.trialledger.dto.*;
 import com.cts.trialledger.entity.*;
 import com.cts.trialledger.exception.ResourceNotFoundException;
 import com.cts.trialledger.mapper.ConsentMapper;
@@ -133,7 +129,7 @@ public class ConsentService {
                             .userId(UserUtil.getCurrentUserId())
                             .entityId(saved.getConsentId())
                             .message("Consent recorded successfully for Participant ID: "
-                                    + saved.getParticipantId()
+                                    + saved.getParticipantId().getParticipantId()
                                     + " under Protocol ID: " + saved.getProtocolId())
                             .category("CONSENT")
                             .build()

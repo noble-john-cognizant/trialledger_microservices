@@ -55,14 +55,16 @@ public class ParticipantService {
 
         Participant p = ParticipantMapper.toEntity(dto);
         p.setEnrollmentStatus(EnrollmentStatus.PENDING);
-        Participant saved;
+        Participant saved = null;
 
         try {
             saved = repo.save(p);
             // Create participant in user table
             RegisterDTO registerDto = new RegisterDTO(dto.getEmail(), "12345678", dto.getPhone(), dto.getName());
             authClient.register(registerDto);
-        } catch (DataIntegrityViolationException ex) {
+        } catch (FeignException.Conflict e) {
+            log.debug("User already exists");
+        }catch (DataIntegrityViolationException ex) {
             String message = ex.getMostSpecificCause().getMessage().toLowerCase();
 
             if (message.contains("contact") || message.contains("unique")) {
