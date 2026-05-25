@@ -116,6 +116,19 @@ public class ParticipantService {
         return ParticipantMapper.toResponse(p);
     }
 
+    /**
+     * Look up the participant by their unique phone number (contactInfo).
+     * Used by the participant self-service portal so a logged-in user can
+     * find their own enrollment without manually entering a participantId.
+     */
+    public ParticipantResponseDTO getParticipantByPhone(String phone) {
+        log.info("Fetching participant by phone: {}", phone);
+        Participant p = repo.findByContactInfo(phone)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "No participant enrolled with phone " + phone));
+        return ParticipantMapper.toResponse(p);
+    }
+
     //  GET BY STUDY ID
     public List<Participant> getByStudyId(Long studyId) {
 

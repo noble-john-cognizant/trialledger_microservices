@@ -8,6 +8,10 @@ public interface AuthService {
 
     void register(RegisterDTO registerDTO);
 
+    /** Step 1: generate a 6-digit OTP for the email and log it to console. */
+    void requestPasswordResetOtp(ForgotPasswordRequestOtpDTO dto);
+
+    /** Step 2: validate OTP then update the password. */
     void forgotPassword(ForgotPasswordDTO dto);
 
     String forgotUsername(ForgotUsernameDTO dto);

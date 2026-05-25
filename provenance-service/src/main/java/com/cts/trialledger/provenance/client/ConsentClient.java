@@ -1,5 +1,6 @@
 package com.cts.trialledger.provenance.client;
 
+import com.cts.trialledger.provenance.client.fallback.ConsentClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -7,7 +8,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 import java.util.Map;
 
-@FeignClient(name = "CONSENT-SERVICE", path = "/api")
+@FeignClient(name = "CONSENT-SERVICE", path = "/api", fallback = ConsentClientFallback.class)
 public interface ConsentClient {
     // Find all consent client by study id
     @GetMapping("/consents/study/{studyId}")

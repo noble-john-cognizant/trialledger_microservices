@@ -3,6 +3,7 @@ package com.cts.trialledger.auth.service;
 
 import com.cts.trialledger.auth.dto.*;
 import com.cts.trialledger.auth.entity.User;
+import com.cts.trialledger.auth.exception.InvalidOtpException;
 import com.cts.trialledger.auth.exception.UserAlreadyExistException;
 import com.cts.trialledger.auth.exception.UserNotFoundException;
 import com.cts.trialledger.auth.model.Role;
@@ -27,13 +28,15 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final OtpStore otpStore;
 
-    public AuthServiceImpl(UserRepository authRepo, PasswordEncoder passwordEncoder, JwtUtil jwtUtil, AuthenticationManager authenticationManager) {
+    public AuthServiceImpl(UserRepository authRepo, PasswordEncoder passwordEncoder, JwtUtil jwtUtil,
+                           AuthenticationManager authenticationManager, OtpStore otpStore) {
         this.authRepo = authRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
         this.authenticationManager = authenticationManager;
-
+        this.otpStore = otpStore;
     }
 
     @Override
@@ -76,12 +79,39 @@ public class AuthServiceImpl implements AuthService {
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
+    /**
+     * Step 1 of the password-reset flow — generate an OTP and log it to the
+     * auth-service console. We verify the email belongs to a real account
+     * BEFORE issuing so attackers can't enumerate the user table and so the
+     * OTP cache isn't polluted with throwaway entries.
+     */
+    @Override
+    public void requestPasswordResetOtp(ForgotPasswordRequestOtpDTO dto) {
+        authRepo.findByEmail(dto.email())
+                .orElseThrow(() -> new UserNotFoundException("No account exists for " + dto.email()));
+        otpStore.issue(dto.email());
+    }
+
+    /**
+     * Step 2 of the password-reset flow — validate the OTP first and only
+     * update the password if it matches. The OTP is single-use and is
+     * consumed on success.
+     */
     @Override
     public void forgotPassword(ForgotPasswordDTO dto) {
-        User user = authRepo.findByEmail(dto.email()).orElseThrow(() -> new UserNotFoundException(dto.email() + " not found."));
+        OtpStore.VerifyResult result = otpStore.verify(dto.email(), dto.otp());
+        switch (result) {
+            case OK -> { /* fall through */ }
+            case MISMATCH          -> throw new InvalidOtpException("Incorrect OTP. Please try again.");
+            case EXPIRED           -> throw new InvalidOtpException("Your OTP has expired. Please request a new one.");
+            case NOT_REQUESTED     -> throw new InvalidOtpException("No OTP was requested for this email. Please request one first.");
+            case TOO_MANY_ATTEMPTS -> throw new InvalidOtpException("Too many incorrect attempts. Please request a new OTP.");
+        }
+
+        User user = authRepo.findByEmail(dto.email())
+                .orElseThrow(() -> new UserNotFoundException(dto.email() + " not found."));
         user.setPassword(passwordEncoder.encode(dto.newPassword()));
         authRepo.save(user);
-
     }
 
     @Override

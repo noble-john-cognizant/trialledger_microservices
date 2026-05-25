@@ -37,6 +37,16 @@ public class ParticipantController {
 
     }
 
+    /**
+     * Look up a participant by phone number. Available to the participant
+     * themselves so they can auto-resolve their enrollment after login.
+     */
+    @GetMapping("/by-phone/{phone}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','TECHNICIAN','DATA_MANAGER','AUDITOR','PARTICIPANT')")
+    public ParticipantResponseDTO getByPhone(@PathVariable String phone) {
+        return service.getParticipantByPhone(phone);
+    }
+
     @GetMapping("/study/{studyId}")
     @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
     public List<Participant> getByStudyId(@PathVariable Long studyId){

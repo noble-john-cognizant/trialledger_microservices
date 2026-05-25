@@ -65,6 +65,19 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
     }
 
+    /** OTP failed: wrong code, expired, never requested, or too many attempts. */
+    @ExceptionHandler(InvalidOtpException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidOtp(InvalidOtpException ex) {
+        log.warn("OTP validation failed: {}", ex.getMessage());
+        ErrorResponse res = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Invalid OTP",
+                ex.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(res);
+    }
+
 
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(AuthorizationDeniedException ex) {
