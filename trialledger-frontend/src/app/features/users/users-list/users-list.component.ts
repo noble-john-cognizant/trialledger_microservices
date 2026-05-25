@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import { Role, UserDTO, ALL_ROLES } from '../../../core/models/user.models';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
@@ -79,7 +80,7 @@ export class UsersListComponent implements OnInit {
     const { role, ...dto } = this.createForm.getRawValue();
     this.api.registerByAdmin(role, dto).subscribe({
       next: () => { this.toast.success('User created'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Create failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Create failed'))
     });
   }
 
@@ -94,7 +95,7 @@ export class UsersListComponent implements OnInit {
     if (!u || this.editForm.invalid) return;
     this.api.update(u.userId, this.editForm.getRawValue()).subscribe({
       next: () => { this.toast.success('Updated'); this.editOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Update failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Update failed'))
     });
   }
 
@@ -102,7 +103,7 @@ export class UsersListComponent implements OnInit {
     const next = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     this.api.updateStatus(u.userId, next).subscribe({
       next: () => { this.toast.success(`User ${next.toLowerCase()}`); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Status change failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Status change failed'))
     });
   }
 }

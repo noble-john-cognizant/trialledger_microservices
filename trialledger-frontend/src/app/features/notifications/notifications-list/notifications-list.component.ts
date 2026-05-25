@@ -1,6 +1,7 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { NotificationService } from '../../../core/services/notification.service';
+import { NotificationStateService } from '../../../core/services/notification-state.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 import {
@@ -17,45 +18,61 @@ import { EmptyStateComponent } from '../../../shared/empty-state/empty-state.com
 })
 export class NotificationsListComponent implements OnInit {
   private api = inject(NotificationService);
+  private state = inject(NotificationStateService);
   private toast = inject(ToastService);
   private auth = inject(AuthService);
 
   categories = ALL_NOTIFICATION_CATEGORIES;
-  list = signal<NotificationResponseDTO[]>([]);
   categoryFilter = signal<NotificationCategory | ''>('');
+
+  /** When ADMIN/COMPLIANCE views this page we additionally show the
+   * full system-wide list under a separate signal. */
+  systemList = signal<NotificationResponseDTO[]>([]);
+
+  /** Pull from the shared state for "my notifications". */
+  myList = this.state.list;
+
+  /** Either my list or the system-wide list, depending on role. */
+  displayList = computed(() =>
+    this.isAdminOrCompliance ? this.systemList() : this.myList()
+  );
 
   filtered = computed(() => {
     const c = this.categoryFilter();
-    return c ? this.list().filter(n => n.category === c) : this.list();
+    const list = this.displayList();
+    return c ? list.filter(n => n.category === c) : list;
   });
-  unreadCount = computed(() => this.list().filter(n => n.status === 'UNREAD').length);
+  unreadCount = computed(() => this.displayList().filter(n => n.status === 'UNREAD').length);
 
-  /** True for roles that should see ALL notifications system-wide */
   private get isAdminOrCompliance(): boolean {
     const role = this.auth.role();
     return role === 'ADMIN' || role === 'COMPLIANCE';
   }
 
-  ngOnInit() { this.load(); }
-
-  load() {
-    const u = this.auth.user();
-    if (!u) return;
-
+  ngOnInit() {
     if (this.isAdminOrCompliance) {
-      // ADMIN and COMPLIANCE see all notifications system-wide
-      this.api.list().subscribe(v => this.list.set(v ?? []));
+      this.api.list().subscribe({
+        next: v => this.systemList.set(v ?? []),
+        error: () => this.systemList.set([])
+      });
     } else {
-      // All other roles (COORDINATOR, PARTICIPANT, PI, etc.) see only their own
-      this.api.byUser(u.userId).subscribe(v => this.list.set(v ?? []));
+      this.state.refresh();
     }
   }
 
   markRead(n: NotificationResponseDTO) {
-    this.api.markRead(n.notificationId).subscribe({
-      next: () => this.list.update(arr =>
-        arr.map(x => x.notificationId === n.notificationId ? { ...x, status: 'READ' } : x))
-    });
+    if (this.isAdminOrCompliance) {
+      // System-wide view — update local copy and call the API directly.
+      this.systemList.update(arr =>
+        arr.map(x => x.notificationId === n.notificationId ? { ...x, status: 'READ' } : x)
+      );
+      this.api.markRead(n.notificationId).subscribe({
+        error: () => this.api.list().subscribe(v => this.systemList.set(v ?? []))
+      });
+    } else {
+      // Personal view — shared state handles the topbar badge automatically.
+      this.state.markRead(n.notificationId);
+    }
   }
 
   markAll() {
@@ -63,14 +80,14 @@ export class NotificationsListComponent implements OnInit {
     if (!u) return;
 
     if (this.isAdminOrCompliance) {
-      // For admin/compliance viewing all notifications, mark all as read via bulk load
+      this.systemList.update(arr => arr.map(n => ({ ...n, status: 'READ' as const })));
       this.api.markAllRead(u.userId).subscribe({
-        next: () => { this.toast.success('All marked read'); this.load(); }
+        next: () => this.toast.success('All marked read'),
+        error: () => this.api.list().subscribe(v => this.systemList.set(v ?? []))
       });
     } else {
-      this.api.markAllRead(u.userId).subscribe({
-        next: () => { this.toast.success('All marked read'); this.load(); }
-      });
+      this.state.markAllRead();
+      this.toast.success('All marked read');
     }
   }
 

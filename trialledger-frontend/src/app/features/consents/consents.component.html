@@ -67,13 +67,8 @@
                 <td><small class="text-muted">{{ c.consentDate | date:'medium' }}</small></td>
                 <td><tl-status [value]="c.status" /></td>
                 <td class="text-end">
-                  @if (c.signedDocumentUri) {
-                    <a class="btn btn-sm btn-light me-1" [href]="c.signedDocumentUri" target="_blank">
-                      <i class="bi bi-file-earmark"></i>
-                    </a>
-                  }
                   @if (canVerify()) {
-                    <button class="btn btn-sm btn-light me-1" (click)="verify(c)">
+                    <button class="btn btn-sm btn-light me-1" (click)="verify(c)" title="Verify document hash">
                       <i class="bi bi-shield-check"></i>
                     </button>
                   }

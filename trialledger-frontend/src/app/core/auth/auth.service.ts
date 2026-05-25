@@ -5,7 +5,7 @@ import { Router } from '@angular/router';
 import { environment } from '../../../environments/environment';
 import {
   LoginDTO, LoginResponseDTO, RegisterDTO,
-  ForgotPasswordDTO, ForgotUsernameDTO
+  ForgotPasswordDTO, ForgotPasswordRequestOtpDTO, ForgotUsernameDTO
 } from '../models/auth.models';
 import { Role } from '../models/user.models';
 import { isAllowed, PermissionKey } from './permissions';
@@ -35,6 +35,12 @@ export class AuthService {
     return this.http.post(`${this.api}/register`, dto, { responseType: 'text' });
   }
 
+  /** Step 1 — ask the server to generate an OTP and print it to its console. */
+  requestPasswordResetOtp(dto: ForgotPasswordRequestOtpDTO): Observable<string> {
+    return this.http.post(`${this.api}/forgot-password/request-otp`, dto, { responseType: 'text' });
+  }
+
+  /** Step 2 — submit OTP + new password to finish the reset. */
   forgotPassword(dto: ForgotPasswordDTO): Observable<string> {
     return this.http.post(`${this.api}/forgot-password`, dto, { responseType: 'text' });
   }

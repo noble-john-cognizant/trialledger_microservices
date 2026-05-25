@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error-message';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { LoginResponseDTO } from '../../core/models/auth.models';
@@ -95,7 +96,7 @@ export class UserProfileComponent implements OnChanges {
         this.editing.set(false);
         this.loadFullProfile();
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Update failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Update failed'))
     });
   }
 

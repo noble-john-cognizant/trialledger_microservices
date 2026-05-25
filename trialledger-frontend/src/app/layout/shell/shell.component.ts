@@ -1,11 +1,11 @@
-import { Component, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastsComponent } from '../../shared/toasts/toasts.component';
 import { UserProfileComponent } from '../../features/user-profile/user-profile.component';
 import { GlobalSearchComponent } from '../global-search/global-search.component';
-import { NotificationService } from '../../core/services/notification.service';
+import { NotificationStateService } from '../../core/services/notification-state.service';
 import { PermissionKey } from '../../core/auth/permissions';
 
 interface NavItem {
@@ -24,14 +24,16 @@ interface NavItem {
   templateUrl: './shell.component.html',
   styleUrls: ['./shell.component.css']
 })
-export class ShellComponent {
+export class ShellComponent implements OnInit, OnDestroy {
   private auth = inject(AuthService);
-  private notifApi = inject(NotificationService);
+  private notif = inject(NotificationStateService);
 
   collapsed = signal(false);
   profileOpen = signal(false);
   user = this.auth.user;
-  unreadCount = signal(0);
+
+  /** Live badge count from the shared notification state. */
+  unreadCount = this.notif.unreadCount;
 
   initials = computed(() => {
     const n = this.user()?.name ?? '';
@@ -58,16 +60,12 @@ export class ShellComponent {
     this.navItems.filter(n => !n.permission || this.auth.can(n.permission))
   );
 
-  constructor() {
-    this.refreshUnread();
+  ngOnInit() {
+    // Begin polling once the shell mounts (user is authenticated by guard).
+    this.notif.start();
   }
 
-  refreshUnread() {
-    const u = this.user();
-    if (!u) return;
-    this.notifApi.unreadForUser(u.userId).subscribe({
-      next: list => this.unreadCount.set(list?.length ?? 0),
-      error: () => this.unreadCount.set(0)
-    });
+  ngOnDestroy() {
+    this.notif.stop();
   }
 }

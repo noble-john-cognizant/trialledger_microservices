@@ -13,6 +13,7 @@ import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.com
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
+import { extractErrorMessage } from '../../core/utils/error-message';
 
 @Component({
   selector: 'tl-consents',
@@ -88,10 +89,18 @@ export class ConsentsComponent implements OnInit {
   }
 
   load() {
+    // Always reset before fetching so a 404/error clears stale results.
+    this.list.set([]);
     if (this.scope() === 'participant' && this.participantId()) {
-      this.api.byParticipant(this.participantId()!).subscribe({ next: v => this.list.set(v ?? []) });
+      this.api.byParticipant(this.participantId()!).subscribe({
+        next: v => this.list.set(v ?? []),
+        error: () => this.list.set([])
+      });
     } else if (this.scope() === 'study' && this.studyId()) {
-      this.api.byStudy(this.studyId()!).subscribe({ next: v => this.list.set(v ?? []) });
+      this.api.byStudy(this.studyId()!).subscribe({
+        next: v => this.list.set(v ?? []),
+        error: () => this.list.set([])
+      });
     }
   }
 
@@ -103,7 +112,7 @@ export class ConsentsComponent implements OnInit {
     if (this.recordForm.invalid) return;
     this.api.create(this.recordForm.getRawValue() as any).subscribe({
       next: () => { this.toast.success('Consent recorded'); this.recordOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Could not record consent.'))
     });
   }
   openWithdraw(c: ConsentResponseDTO) {
@@ -120,13 +129,13 @@ export class ConsentsComponent implements OnInit {
       ...this.withdrawForm.getRawValue()
     }).subscribe({
       next: () => { this.toast.success('Withdrawn'); this.withdrawOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Could not withdraw consent.'))
     });
   }
   verify(c: ConsentResponseDTO) {
     this.api.verify(c.consentId).subscribe({
       next: m => this.toast.success(m || 'Verified'),
-      error: e => this.toast.error(e?.error ?? 'Verification failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Verification failed'))
     });
   }
 }

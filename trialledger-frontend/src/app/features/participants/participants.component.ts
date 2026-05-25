@@ -6,6 +6,7 @@ import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error-message';
 import {
   EnrollmentStatus, ParticipantResponseDTO, ALL_ENROLLMENT_STATUSES
 } from '../../core/models/participant.models';
@@ -111,7 +112,7 @@ export class ParticipantsComponent implements OnInit {
       email: v.email
     }).subscribe({
       next: () => { this.toast.success('Enrolled'); this.open.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 

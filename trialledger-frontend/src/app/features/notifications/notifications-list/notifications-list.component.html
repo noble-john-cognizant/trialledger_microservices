@@ -16,7 +16,7 @@
       <button class="btn btn-sm chip" [class.chip-active]="categoryFilter() === c"
         (click)="categoryFilter.set(c)">{{ c }}</button>
     }
-    <span class="ms-auto small text-muted">{{ unreadCount() }} unread of {{ list().length }}</span>
+    <span class="ms-auto small text-muted">{{ unreadCount() }} unread of {{ displayList().length }}</span>
   </div>
 </div>
 

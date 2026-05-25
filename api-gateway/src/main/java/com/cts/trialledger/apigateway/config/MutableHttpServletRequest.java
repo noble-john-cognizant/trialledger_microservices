@@ -5,7 +5,17 @@ import jakarta.servlet.http.HttpServletRequestWrapper;
 
 import java.util.*;
 
-
+/**
+ * MutableHttpServletRequest
+ *
+ * HttpServletRequest headers are read-only by the servlet spec.
+ * This wrapper overrides getHeader() / getHeaders() / getHeaderNames()
+ * so we can inject custom headers (X-User-Id, X-User-Role, etc.)
+ * before the request is forwarded to the downstream microservice.
+ *
+ * This is the standard pattern for header mutation in servlet-based
+ * Spring Cloud Gateway (gateway-server-webmvc).
+ */
 public class MutableHttpServletRequest extends HttpServletRequestWrapper {
 
     private final Map<String, String> customHeaders = new HashMap<>();

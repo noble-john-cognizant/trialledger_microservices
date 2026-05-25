@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import { ToastsComponent } from '../../../shared/toasts/toasts.component';
 
 @Component({
@@ -39,7 +40,7 @@ export class RegisterComponent {
       },
       error: err => {
         this.loading.set(false);
-        this.toast.error(err?.error?.message ?? 'Registration failed');
+        this.toast.error(extractErrorMessage(err, 'Registration failed'));
       }
     });
   }

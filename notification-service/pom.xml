@@ -118,7 +118,7 @@
                 <scope>import</scope>
             </dependency>
 
-        
+
 
         <!-- Resilience4j circuit breaker (auto-managed by Spring Cloud BOM) -->
         <dependency>

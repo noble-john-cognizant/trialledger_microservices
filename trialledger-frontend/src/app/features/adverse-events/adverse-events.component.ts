@@ -6,6 +6,7 @@ import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error-message';
 import {
   AdverseEventResponseDto, AEStatus, Severity,
   AEFollowUpResponseDto, ALL_SEVERITIES, ALL_AE_STATUSES
@@ -117,7 +118,7 @@ export class AdverseEventsComponent implements OnInit {
         this.toast.success('Reported'); this.reportOpen.set(false);
         this.api.list().subscribe(v => this.list.set(v ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
@@ -165,7 +166,7 @@ export class AdverseEventsComponent implements OnInit {
         this.toast.success('Follow-up added'); this.followOpen.set(false);
         this.api.followUps(ae.aeId).subscribe(v => this.followUps.set(v ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 }

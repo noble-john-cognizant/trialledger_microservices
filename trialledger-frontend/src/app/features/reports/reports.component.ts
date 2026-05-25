@@ -6,6 +6,7 @@ import { KpiService } from '../../core/services/kpi.service';
 import { StudyService } from '../../core/services/study.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error-message';
 import { ReportResponseDTO, ReportScope, ALL_REPORT_SCOPES } from '../../core/models/report.models';
 import { KPIResponseDTO } from '../../core/models/kpi.models';
 import { StudyResponseDto } from '../../core/models/study.models';
@@ -75,7 +76,7 @@ export class ReportsComponent implements OnInit {
     if (this.reportForm.invalid) return;
     this.rApi.create(this.reportForm.getRawValue() as any).subscribe({
       next: () => { this.toast.success('Report created'); this.reportOpen.set(false); this.loadReports(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
@@ -90,7 +91,7 @@ export class ReportsComponent implements OnInit {
         this.toast.success('KPI created'); this.kpiOpen.set(false);
         this.kApi.list().subscribe(v => this.kpis.set(v ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
