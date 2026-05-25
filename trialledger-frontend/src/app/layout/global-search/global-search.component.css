@@ -1,0 +1,108 @@
+.global-search {
+  flex: 1;
+  max-width: 480px;
+}
+
+.search-input {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  padding: .45rem .75rem;
+  border-radius: 10px;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.search-input:focus-within {
+  border-color: var(--tl-primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(40, 83, 214, 0.12);
+}
+.search-input i.bi-search { color: #94a3b8; }
+.search-input input {
+  border: 0;
+  outline: 0;
+  background: transparent;
+  flex: 1;
+  font: inherit;
+}
+.btn-clear {
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  padding: 2px 4px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: .85rem;
+}
+.btn-clear:hover { background: #e5e7eb; color: #1f2937; }
+
+.results-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+  z-index: 1080;
+}
+
+.results-section {
+  padding: .5rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+.results-section:last-of-type { border-bottom: 0; }
+
+.results-header {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #6b7280;
+  padding: .35rem .85rem;
+}
+
+.result-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: .6rem .85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background .12s;
+}
+.result-row:hover { background: #f8fafc; }
+
+.result-icon {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  font-size: .95rem;
+  flex-shrink: 0;
+}
+
+.result-row .min-w-0 { min-width: 0; }
+.result-row .badge { flex-shrink: 0; }
+
+.results-footer {
+  font-size: .72rem;
+  color: #6b7280;
+  padding: .5rem .85rem;
+  border-top: 1px solid #f3f4f6;
+  background: #fafafa;
+  text-align: center;
+}
+.results-footer kbd {
+  display: inline-block;
+  background: #e5e7eb;
+  border-radius: 4px;
+  padding: 0 .35rem;
+  font-size: .7rem;
+  margin: 0 .15rem;
+}

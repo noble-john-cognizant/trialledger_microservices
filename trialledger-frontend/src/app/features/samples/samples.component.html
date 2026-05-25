@@ -1,0 +1,245 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Samples</h2>
+    <p class="text-muted mb-0">Track biological samples through their full lifecycle.</p>
+  </div>
+  @if (canCreate()) {
+    <button class="btn btn-primary" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i> Log sample
+    </button>
+  }
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <input class="form-control" style="max-width:300px"
+      placeholder="Search by sample ID, type, location…"
+      (input)="search.set($any($event.target).value)">
+    <select class="form-select" style="max-width:200px" (change)="statusFilter.set($any($event.target).value)">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <select class="form-select" style="max-width:200px" (change)="typeFilter.set($any($event.target).value)">
+      <option value="">All types</option>
+      @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+    </select>
+    <span class="ms-auto small text-muted">{{ filtered().length }} samples</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (filtered().length === 0) {
+      <div class="p-4">
+        <tl-empty icon="bi-droplet" title="No samples" description="Log your first sample to start tracking custody." />
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr><th>Sample ID</th><th>Type</th><th>Participant</th><th>Study</th><th>Collected</th><th>Location</th><th>Status</th><th class="text-end">Actions</th></tr>
+          </thead>
+          <tbody>
+            @for (s of filtered(); track s.sampleId) {
+              <tr>
+                <td><span class="badge bg-soft-primary">#{{ s.sampleId }}</span></td>
+                <td><span class="badge bg-soft-secondary">{{ s.sampleType }}</span></td>
+                <td><span class="badge bg-soft-secondary">#{{ s.participantId }}</span></td>
+                <td><span class="badge bg-soft-secondary">#{{ s.studyId }}</span></td>
+                <td>
+                  <div><small class="text-muted">{{ s.collectedAt | date:'medium' }}</small></div>
+                  <small class="text-muted">by {{ s.collectedBy }}</small>
+                </td>
+                <td><small class="mono">{{ s.initialLocation }}</small></td>
+                <td><tl-status [value]="s.status" /></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-light" (click)="openDetails(s)">
+                    <i class="bi bi-eye me-1"></i> Inspect
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<tl-modal [open]="createOpen()" title="Log sample" (close)="createOpen.set(false)">
+  <form [formGroup]="form" class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Participant</label>
+      <tl-search-select
+        [items]="participantOptions()"
+        [value]="form.controls.participantId.value"
+        [canList]="canListParticipants()"
+        [idPlaceholder]="'Enter participant ID'"
+        (valueChange)="setParticipant($event)" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Study</label>
+      <tl-search-select
+        [items]="studyOptions()"
+        [value]="form.controls.studyId.value"
+        [canList]="canListStudy()"
+        [idPlaceholder]="'Enter study ID'"
+        (valueChange)="setStudy($event)" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Sample type</label>
+      <select class="form-select" formControlName="sampleType">
+        @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Status</label>
+      <select class="form-select" formControlName="status">
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+    </div>
+    <div class="col-md-6"><label class="form-label">Collected by</label><input class="form-control" formControlName="collectedBy"></div>
+    <div class="col-md-6"><label class="form-label">Initial location</label><input class="form-control" formControlName="initialLocation"></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="createOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">Log</button>
+  </div>
+</tl-modal>
+
+<tl-modal [open]="detailsOpen()" size="xl"
+  [title]="'Sample #' + (selected()?.sampleId ?? '')" (close)="detailsOpen.set(false)">
+  @if (selected(); as s) {
+    <div class="row g-3 mb-4">
+      <div class="col-md-7">
+        <div class="card h-100"><div class="card-body">
+          <h6 class="fw-bold mb-3">Sample details</h6>
+          <dl class="row mb-0">
+            <dt class="col-sm-4 text-muted small">Type</dt><dd class="col-sm-8 fw-semibold">{{ s.sampleType }}</dd>
+            <dt class="col-sm-4 text-muted small">Status</dt><dd class="col-sm-8"><tl-status [value]="s.status" /></dd>
+            <dt class="col-sm-4 text-muted small">Collected by</dt><dd class="col-sm-8">{{ s.collectedBy }}</dd>
+            <dt class="col-sm-4 text-muted small">Initial location</dt><dd class="col-sm-8 mono">{{ s.initialLocation }}</dd>
+            <dt class="col-sm-4 text-muted small">Collected at</dt><dd class="col-sm-8">{{ s.collectedAt | date:'medium' }}</dd>
+          </dl>
+        </div></div>
+      </div>
+      <div class="col-md-5">
+        <div class="card h-100"><div class="card-body d-flex flex-column gap-2">
+          <h6 class="fw-bold mb-1">Quick actions</h6>
+          @if (canCustody()) { <button class="btn btn-primary" (click)="openTransfer()"><i class="bi bi-arrow-left-right me-1"></i> Transfer custody</button> }
+          @if (canStorage()) { <button class="btn btn-outline-primary" (click)="openStore()"><i class="bi bi-archive me-1"></i> Store</button> }
+          @if (canAssay()) { <button class="btn btn-outline-primary" (click)="openAssay()"><i class="bi bi-flask me-1"></i> Log assay run</button> }
+          @if (!canCustody() && !canStorage() && !canAssay()) {
+            <div class="text-muted small">No actions available for your role.</div>
+          }
+        </div></div>
+      </div>
+    </div>
+
+    @if (canViewCustody()) {
+      <div class="mb-4">
+        <h6 class="fw-bold mb-2"><i class="bi bi-link-45deg me-1"></i> Chain of custody</h6>
+        @if (custody().length === 0) { <div class="text-muted small">No transfers recorded.</div> }
+        @else {
+          <table class="table table-sm table-bordered">
+            <thead><tr><th>When</th><th>From</th><th>→ To</th><th>Locations</th><th>Notes</th></tr></thead>
+            <tbody>
+              @for (c of custody(); track c.cocId) {
+                <tr>
+                  <td><small class="text-muted">{{ c.transferAt | date:'medium' }}</small></td>
+                  <td>{{ c.fromUser }}</td>
+                  <td>{{ c.toUser }}</td>
+                  <td><small>{{ c.fromLocation }} → {{ c.toLocation }}</small></td>
+                  <td><small>{{ c.notes }}</small></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+
+    @if (canViewStorage()) {
+      <div class="mb-4">
+        <h6 class="fw-bold mb-2"><i class="bi bi-archive me-1"></i> Storage history</h6>
+        @if (storage().length === 0) { <div class="text-muted small">No storage records.</div> }
+        @else {
+          <table class="table table-sm table-bordered">
+            <thead><tr><th>Freezer</th><th>Shelf</th><th>Box</th><th>Position</th><th>Stored</th><th>Retrieved</th></tr></thead>
+            <tbody>
+              @for (st of storage(); track st.storageId) {
+                <tr>
+                  <td>F{{ st.freezerId }}</td><td>{{ st.shelf }}</td><td>{{ st.box }}</td><td>{{ st.position }}</td>
+                  <td><small class="text-muted">{{ st.storedAt | date:'short' }}</small></td>
+                  <td><small class="text-muted">{{ st.retrievedAt | date:'short' }}</small></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+
+    @if (canViewAssay()) {
+      <div>
+        <h6 class="fw-bold mb-2"><i class="bi bi-flask me-1"></i> Assay runs</h6>
+        @if (assays().length === 0) { <div class="text-muted small">No assays run.</div> }
+        @else {
+          <table class="table table-sm table-bordered">
+            <thead><tr><th>Date</th><th>Instrument</th><th>Operator</th><th>Protocol</th><th>Result</th></tr></thead>
+            <tbody>
+              @for (a of assays(); track a.assayId) {
+                <tr>
+                  <td><small class="text-muted">{{ a.runDate | date:'short' }}</small></td>
+                  <td>I{{ a.instrumentId }}</td><td>U{{ a.operatorId }}</td>
+                  <td><small class="mono">{{ a.protocolRef }}</small></td>
+                  <td>@if (a.resultUri) { <a [href]="a.resultUri" target="_blank">Open</a> }</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
+  }
+</tl-modal>
+
+<tl-modal [open]="transferOpen()" title="Transfer custody" (close)="transferOpen.set(false)">
+  <form [formGroup]="transferForm" class="row g-3">
+    <div class="col-md-6"><label class="form-label">From user</label><input class="form-control" formControlName="fromUser"></div>
+    <div class="col-md-6"><label class="form-label">To user</label><input class="form-control" formControlName="toUser"></div>
+    <div class="col-md-6"><label class="form-label">From location</label><input class="form-control" formControlName="fromLocation"></div>
+    <div class="col-md-6"><label class="form-label">To location</label><input class="form-control" formControlName="toLocation"></div>
+    <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" formControlName="notes"></textarea></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="transferOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="transferForm.invalid" (click)="submitTransfer()">Save</button>
+  </div>
+</tl-modal>
+
+<tl-modal [open]="storeOpen()" title="Store sample" (close)="storeOpen.set(false)">
+  <form [formGroup]="storeForm" class="row g-3">
+    <div class="col-md-6"><label class="form-label">Freezer ID</label><input type="number" class="form-control" formControlName="freezerId"></div>
+    <div class="col-md-6"><label class="form-label">Shelf</label><input class="form-control" formControlName="shelf"></div>
+    <div class="col-md-6"><label class="form-label">Box</label><input class="form-control" formControlName="box"></div>
+    <div class="col-md-6"><label class="form-label">Position</label><input class="form-control" formControlName="position"></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="storeOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="storeForm.invalid" (click)="submitStore()">Store</button>
+  </div>
+</tl-modal>
+
+<tl-modal [open]="assayOpen()" title="Log assay run" (close)="assayOpen.set(false)">
+  <form [formGroup]="assayForm" class="row g-3">
+    <div class="col-md-6"><label class="form-label">Instrument ID</label><input type="number" class="form-control" formControlName="instrumentId"></div>
+    <div class="col-md-6"><label class="form-label">Operator ID</label><input type="number" class="form-control" formControlName="operatorId"></div>
+    <div class="col-12"><label class="form-label">Protocol ref</label><input class="form-control" formControlName="protocolRef"></div>
+    <div class="col-12"><label class="form-label">Metadata JSON</label><textarea class="form-control" formControlName="metadataJson" placeholder='{"key":"value"}'></textarea></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="assayOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="assayForm.invalid" (click)="submitAssay()">Save</button>
+  </div>
+</tl-modal>
