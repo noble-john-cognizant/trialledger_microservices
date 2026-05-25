@@ -1,0 +1,189 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Provenance &amp; audit exports</h2>
+    <p class="text-muted mb-0">Immutable activity logs, dataset snapshots and exportable audit packages.</p>
+  </div>
+  <div class="d-flex gap-2">
+    @if (canCreateSnapshot()) {
+      <button class="btn btn-outline-primary" (click)="snapshotOpen.set(true)">
+        <i class="bi bi-camera me-1"></i> Snapshot
+      </button>
+    }
+    @if (canCreatePackage()) {
+      <button class="btn btn-primary" (click)="packageOpen.set(true)">
+        <i class="bi bi-archive me-1"></i> Audit package
+      </button>
+    }
+  </div>
+</div>
+
+<ul class="nav nav-pills mb-3">
+  @if (canViewRecords()) {
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="tab() === 'records'" (click)="tab.set('records')">Records</button>
+    </li>
+  }
+  @if (canViewSnapshots()) {
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="tab() === 'snapshots'" (click)="tab.set('snapshots')">Dataset snapshots</button>
+    </li>
+  }
+  @if (canViewPackages()) {
+    <li class="nav-item">
+      <button class="nav-link" [class.active]="tab() === 'packages'" (click)="tab.set('packages')">Audit packages</button>
+    </li>
+  }
+</ul>
+
+@if (tab() === 'records' && canViewRecords()) {
+  <div class="card">
+    <div class="card-body p-0">
+      @if (records().length === 0) {
+        <div class="p-4">
+          <tl-empty icon="bi-link-45deg" title="No provenance records" description="Activity will appear here as actions happen." />
+        </div>
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover mb-0 align-middle">
+            <thead>
+              <tr><th>ID</th><th>When</th><th>Entity</th><th>Action</th><th>Performed by</th><th>Metadata</th></tr>
+            </thead>
+            <tbody>
+              @for (r of records(); track r.provId) {
+                <tr>
+                  <td class="mono">#{{ r.provId }}</td>
+                  <td><small class="text-muted">{{ r.performedAt | date:'short' }}</small></td>
+                  <td>
+                    <span class="badge bg-soft-primary">{{ r.entityType }}</span>
+                    <span class="mono small">#{{ r.entityId }}</span>
+                  </td>
+                  <td><span class="badge bg-soft-purple">{{ r.action }}</span></td>
+                  <td>U{{ r.performedBy }}</td>
+                  <td>
+                    <details>
+                      <summary class="small text-muted">View JSON</summary>
+                      <pre class="mono small mb-0 mt-2">{{ r.metadataJson | json }}</pre>
+                    </details>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <div class="d-flex justify-content-center align-items-center gap-3 py-3 border-top">
+          <button class="btn btn-sm btn-light" [disabled]="page() === 0" (click)="changePage(page() - 1)">← Prev</button>
+          <span class="small text-muted">Page {{ page() + 1 }} of {{ totalPages() }}</span>
+          <button class="btn btn-sm btn-light" [disabled]="page() + 1 >= totalPages()" (click)="changePage(page() + 1)">Next →</button>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (tab() === 'snapshots' && canViewSnapshots()) {
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex gap-2 mb-3">
+        <select class="form-select" style="max-width:300px"
+          (change)="snapStudyId.set(+$any($event.target).value || null); loadSnapshots()">
+          <option [value]="">Select study…</option>
+          @for (s of studies(); track s.studyId) { <option [value]="s.studyId">{{ s.title }}</option> }
+        </select>
+      </div>
+      @if (snapshots().length === 0) {
+        <tl-empty icon="bi-camera" title="No snapshots" description="Generate a snapshot from a study above." />
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>ID</th><th>Snapshot date</th><th>URI</th><th>Hash</th><th>Entities</th></tr></thead>
+            <tbody>
+              @for (s of snapshots(); track s.snapshotId) {
+                <tr>
+                  <td class="mono">#{{ s.snapshotId }}</td>
+                  <td><small class="text-muted">{{ s.snapshotDate | date:'medium' }}</small></td>
+                  <td><a [href]="s.snapshotUri" target="_blank" class="mono small truncate">{{ s.snapshotUri }}</a></td>
+                  <td><small class="mono truncate">{{ s.hash }}</small></td>
+                  <td><small class="mono">{{ s.includedEntitiesJson }}</small></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+@if (tab() === 'packages' && canViewPackages()) {
+  <div class="card">
+    <div class="card-body">
+      <div class="d-flex gap-2 mb-3">
+        <select class="form-select" style="max-width:300px"
+          (change)="pkgStudyId.set(+$any($event.target).value || null); loadPackages()">
+          <option [value]="">Select study…</option>
+          @for (s of studies(); track s.studyId) { <option [value]="s.studyId">{{ s.title }}</option> }
+        </select>
+      </div>
+      @if (packages().length === 0) {
+        <tl-empty icon="bi-archive" title="No audit packages" description="Generate one for the selected study." />
+      } @else {
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead><tr><th>ID</th><th>Period</th><th>Generated</th><th>URI</th><th>Download</th></tr></thead>
+            <tbody>
+              @for (p of packages(); track p.packageId) {
+                <tr>
+                  <td class="mono">#{{ p.packageId }}</td>
+                  <td><small class="text-muted">{{ p.periodStart | date:'mediumDate' }} – {{ p.periodEnd | date:'mediumDate' }}</small></td>
+                  <td><small class="text-muted">{{ p.generatedAt | date:'medium' }}</small></td>
+                  <td><a [href]="p.packageUri" target="_blank" class="mono small truncate">{{ p.packageUri }}</a></td>
+                  <td>
+                    @if (canDownloadPackage()) {
+                      <button class="btn btn-sm btn-outline-primary" (click)="download(p)">
+                        <i class="bi bi-download me-1"></i> ZIP
+                      </button>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  </div>
+}
+
+<tl-modal [open]="snapshotOpen()" title="Create dataset snapshot" (close)="snapshotOpen.set(false)">
+  <div class="row g-3">
+    <div class="col-12">
+      <label class="form-label">Study</label>
+      <select class="form-select" [(ngModel)]="newSnapshotStudy">
+        <option [ngValue]="null">Select…</option>
+        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }
+      </select>
+    </div>
+  </div>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="snapshotOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="!newSnapshotStudy" (click)="createSnapshot()">Generate</button>
+  </div>
+</tl-modal>
+
+<tl-modal [open]="packageOpen()" title="Generate audit package" (close)="packageOpen.set(false)">
+  <form [formGroup]="pkgForm" class="row g-3">
+    <div class="col-12">
+      <label class="form-label">Study</label>
+      <select class="form-select" formControlName="studyId">
+        <option [ngValue]="null">Select…</option>
+        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }
+      </select>
+    </div>
+    <div class="col-md-6"><label class="form-label">Start date</label><input type="date" class="form-control" formControlName="startDate"></div>
+    <div class="col-md-6"><label class="form-label">End date</label><input type="date" class="form-control" formControlName="endDate"></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="packageOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="pkgForm.invalid" (click)="createPackage()">Generate</button>
+  </div>
+</tl-modal>

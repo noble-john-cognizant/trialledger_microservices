@@ -1,0 +1,95 @@
+<div class="global-search position-relative">
+  <div class="search-input">
+    <i class="bi bi-search"></i>
+    <input
+      type="text"
+      placeholder="Search studies, participants, samples…"
+      [ngModel]="query()"
+      (ngModelChange)="query.set($event); open.set(true)"
+      (focus)="onFocus()"
+      (keyup.enter)="onEnter()"
+      (keyup.escape)="open.set(false)" />
+    @if (query()) {
+      <button class="btn-clear" type="button" (click)="query.set(''); open.set(false)" title="Clear">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    }
+  </div>
+
+  @if (open() && query().length > 0) {
+    <div class="results-panel shadow-lg">
+      @if (results().length === 0) {
+        <div class="text-muted small p-4 text-center">
+          <i class="bi bi-search"></i> No matches for "<strong>{{ query() }}</strong>"
+        </div>
+      } @else {
+        @if (studyHits().length) {
+          <div class="results-section">
+            <div class="results-header">
+              <i class="bi bi-journal-bookmark me-1"></i> Studies
+            </div>
+            @for (h of studyHits(); track h.id) {
+              <button class="result-row" type="button" (click)="pick(h)">
+                <span class="result-icon text-bg-primary"><i class="bi" [ngClass]="h.icon"></i></span>
+                <span class="flex-grow-1 min-w-0">
+                  <span class="d-flex align-items-center gap-2">
+                    <span class="badge bg-soft-primary">#{{ h.id }}</span>
+                    <span class="fw-semibold text-truncate">{{ h.label }}</span>
+                  </span>
+                  <small class="text-muted text-truncate d-block">{{ h.subtitle }}</small>
+                </span>
+                <i class="bi bi-arrow-right text-muted"></i>
+              </button>
+            }
+          </div>
+        }
+
+        @if (participantHits().length) {
+          <div class="results-section">
+            <div class="results-header">
+              <i class="bi bi-people me-1"></i> Participants
+            </div>
+            @for (h of participantHits(); track h.id) {
+              <button class="result-row" type="button" (click)="pick(h)">
+                <span class="result-icon text-bg-success"><i class="bi" [ngClass]="h.icon"></i></span>
+                <span class="flex-grow-1 min-w-0">
+                  <span class="d-flex align-items-center gap-2">
+                    <span class="badge bg-soft-success">#{{ h.id }}</span>
+                    <span class="fw-semibold text-truncate">{{ h.label }}</span>
+                  </span>
+                  <small class="text-muted text-truncate d-block">{{ h.subtitle }}</small>
+                </span>
+                <i class="bi bi-arrow-right text-muted"></i>
+              </button>
+            }
+          </div>
+        }
+
+        @if (sampleHits().length) {
+          <div class="results-section">
+            <div class="results-header">
+              <i class="bi bi-droplet me-1"></i> Samples
+            </div>
+            @for (h of sampleHits(); track h.id) {
+              <button class="result-row" type="button" (click)="pick(h)">
+                <span class="result-icon text-bg-warning"><i class="bi" [ngClass]="h.icon"></i></span>
+                <span class="flex-grow-1 min-w-0">
+                  <span class="d-flex align-items-center gap-2">
+                    <span class="badge bg-soft-warning">#{{ h.id }}</span>
+                    <span class="fw-semibold text-truncate">{{ h.label }}</span>
+                  </span>
+                  <small class="text-muted text-truncate d-block">{{ h.subtitle }}</small>
+                </span>
+                <i class="bi bi-arrow-right text-muted"></i>
+              </button>
+            }
+          </div>
+        }
+
+        <div class="results-footer">
+          <kbd>↵</kbd> open first result · <kbd>Esc</kbd> close
+        </div>
+      }
+    </div>
+  }
+</div>

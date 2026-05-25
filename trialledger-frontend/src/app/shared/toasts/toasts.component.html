@@ -1,0 +1,10 @@
+<div class="toast-stack">
+  @for (t of toast.toasts(); track t.id) {
+    <div class="toast show" [ngClass]="bgClass(t.kind)" role="alert" (click)="toast.dismiss(t.id)">
+      <div class="d-flex">
+        <div class="toast-body">{{ t.message }}</div>
+        <button type="button" class="btn-close btn-close-white me-2 m-auto" (click)="toast.dismiss(t.id)"></button>
+      </div>
+    </div>
+  }
+</div>

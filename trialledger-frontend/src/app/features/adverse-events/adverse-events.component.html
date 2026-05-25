@@ -1,0 +1,184 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Adverse events</h2>
+    <p class="text-muted mb-0">Track AEs, severity, follow-ups and resolution.</p>
+  </div>
+  @if (canReport()) {
+    <button class="btn btn-danger" (click)="openReport()">
+      <i class="bi bi-exclamation-triangle me-1"></i> Report AE
+    </button>
+  }
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <input class="form-control" style="max-width:280px"
+      placeholder="Search description…" (input)="search.set($any($event.target).value)">
+    <select class="form-select" style="max-width:200px" (change)="severityFilter.set($any($event.target).value)">
+      <option value="">All severities</option>
+      @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <select class="form-select" style="max-width:200px" (change)="statusFilter.set($any($event.target).value)">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <span class="ms-auto small text-muted">{{ filtered().length }} events</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (filtered().length === 0) {
+      <div class="p-4">
+        <tl-empty icon="bi-exclamation-triangle" title="No adverse events"
+          description="Great — no AEs to handle right now." />
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr><th>AE ID</th><th>Description</th><th>Participant</th><th>Study</th><th>Severity</th><th>Status</th><th>Reported</th><th class="text-end">Actions</th></tr>
+          </thead>
+          <tbody>
+            @for (ae of filtered(); track ae.aeId) {
+              <tr>
+                <td><span class="badge bg-soft-primary">#{{ ae.aeId }}</span></td>
+                <td><span class="truncate">{{ ae.description }}</span></td>
+                <td><span class="badge bg-soft-secondary">#{{ ae.participantId }}</span></td>
+                <td><span class="badge bg-soft-secondary">#{{ ae.studyId }}</span></td>
+                <td><tl-status [value]="ae.severity" /></td>
+                <td><tl-status [value]="ae.status" /></td>
+                <td><small class="text-muted">{{ ae.reportedAt | date:'short' }}</small></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-light" (click)="openDetails(ae)">View</button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<tl-modal [open]="reportOpen()" title="Report adverse event" (close)="reportOpen.set(false)">
+  <form [formGroup]="form" class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Participant</label>
+      <tl-search-select
+        [items]="participantOptions()"
+        [value]="form.controls.participantId.value"
+        [canList]="canListParticipants()"
+        [idPlaceholder]="'Enter participant ID'"
+        (valueChange)="setParticipant($event)" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Study</label>
+      <tl-search-select
+        [items]="studyOptions()"
+        [value]="form.controls.studyId.value"
+        [canList]="canListStudy()"
+        [idPlaceholder]="'Enter study ID'"
+        (valueChange)="setStudy($event)" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Severity</label>
+      <select class="form-select" formControlName="severity">
+        @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+    </div>
+    <div class="col-12"><label class="form-label">Description</label><textarea class="form-control" formControlName="description" rows="3"></textarea></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="reportOpen.set(false)">Cancel</button>
+    <button class="btn btn-danger" [disabled]="form.invalid" (click)="submit()">Report</button>
+  </div>
+</tl-modal>
+
+<tl-modal [open]="detailOpen()" size="lg"
+  [title]="'Adverse event #' + (selected()?.aeId ?? '')" (close)="detailOpen.set(false)">
+  @if (selected(); as ae) {
+    <div class="row g-3 mb-4">
+      <div class="col-md-7">
+        <div class="card h-100"><div class="card-body">
+          <h6 class="fw-bold mb-2">Event</h6>
+          <p>{{ ae.description }}</p>
+          <div class="d-flex gap-3 align-items-center">
+            <div><small class="text-muted">Severity</small> <tl-status [value]="ae.severity" /></div>
+            <div><small class="text-muted">Status</small> <tl-status [value]="ae.status" /></div>
+          </div>
+          <small class="text-muted d-block mt-2">
+            Reported {{ ae.reportedAt | date:'medium' }} by user #{{ ae.reportedById }}
+          </small>
+        </div></div>
+      </div>
+      <div class="col-md-5">
+        <div class="card h-100"><div class="card-body d-flex flex-column gap-2">
+          <h6 class="fw-bold mb-1">Manage</h6>
+          @if (canManage()) {
+            <div>
+              <label class="form-label small">Change severity</label>
+              <select class="form-select form-select-sm" (change)="updateSeverity($any($event.target).value)">
+                <option value="">Severity…</option>
+                @for (s of severities; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </div>
+            <div>
+              <label class="form-label small">Change status</label>
+              <select class="form-select form-select-sm" (change)="updateStatus($any($event.target).value)">
+                <option value="">Status…</option>
+                @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+              </select>
+            </div>
+          }
+          @if (canDelete()) {
+            <button class="btn btn-outline-danger btn-sm mt-2" (click)="del()">
+              <i class="bi bi-trash me-1"></i> Delete event
+            </button>
+          }
+          @if (!canManage() && !canDelete()) {
+            <div class="text-muted small">View-only access for your role.</div>
+          }
+        </div></div>
+      </div>
+    </div>
+
+    @if (canViewFollowUp()) {
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold mb-0">Follow-ups</h6>
+        @if (canFollowUp()) {
+          <button class="btn btn-sm btn-primary" (click)="followOpen.set(true)">
+            <i class="bi bi-plus-lg me-1"></i> Add follow-up
+          </button>
+        }
+      </div>
+      @if (followUps().length === 0) { <div class="text-muted small">No follow-ups yet.</div> }
+      @else {
+        <table class="table table-sm table-bordered">
+          <thead><tr><th>Date</th><th>Action</th><th>By</th><th>Notes</th></tr></thead>
+          <tbody>
+            @for (f of followUps(); track f.followUpId) {
+              <tr>
+                <td><small class="text-muted">{{ f.performedAt | date:'medium' }}</small></td>
+                <td class="fw-semibold">{{ f.actionTaken }}</td>
+                <td>U{{ f.performedById }}</td>
+                <td><small>{{ f.notes }}</small></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    }
+  }
+</tl-modal>
+
+<tl-modal [open]="followOpen()" title="Add follow-up" (close)="followOpen.set(false)">
+  <form [formGroup]="followForm" class="row g-3">
+    <div class="col-12"><label class="form-label">Action taken</label><input class="form-control" formControlName="actionTaken"></div>
+    <div class="col-12"><label class="form-label">Notes</label><textarea class="form-control" formControlName="notes" rows="3"></textarea></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="followOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="followForm.invalid" (click)="submitFollow()">Save</button>
+  </div>
+</tl-modal>

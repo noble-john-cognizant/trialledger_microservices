@@ -1,0 +1,61 @@
+<tl-toasts />
+<div class="auth-shell">
+  <aside class="auth-hero d-none d-lg-flex flex-column justify-content-between">
+    <div>
+      <div class="brand d-flex align-items-center gap-2">
+        <span class="brand-logo">TL</span>
+        <span class="fs-4 fw-bold">TrialLedger</span>
+      </div>
+      <h1 class="mt-5 fw-bold lh-sm">Join the trial workspace.</h1>
+      <p class="lead opacity-75">Register as a participant to consent electronically and view your study timeline.</p>
+    </div>
+    <div class="small opacity-75">Coordinators &amp; lab staff are added by an Administrator.</div>
+  </aside>
+
+  <section class="auth-form">
+    <div class="auth-card">
+      <h2 class="fw-bold mb-1">Create your account</h2>
+      <p class="text-muted mb-4">Public sign-ups are created as Participants.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Full name</label>
+          <input class="form-control" formControlName="name" placeholder="Alex Chen">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-control" formControlName="email" placeholder="you@example.com">
+          @if (form.controls.email.invalid && form.controls.email.touched) {
+            <div class="form-text text-danger">Valid email required</div>
+          }
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Phone (10 digits)</label>
+          <input class="form-control" formControlName="phone" placeholder="9876543210" maxlength="10">
+          @if (form.controls.phone.invalid && form.controls.phone.touched) {
+            <div class="form-text text-danger">Exactly 10 digits required</div>
+          }
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" formControlName="password" placeholder="••••••••">
+          @if (form.controls.password.invalid && form.controls.password.touched) {
+            <div class="form-text text-danger">8–50 characters</div>
+          }
+        </div>
+
+        <button class="btn btn-primary w-100" type="submit" [disabled]="form.invalid || loading()">
+          @if (loading()) {
+            <span class="spinner-border spinner-border-sm me-2"></span> Creating account…
+          } @else {
+            Create account
+          }
+        </button>
+      </form>
+
+      <div class="text-center mt-4 small text-muted">
+        Already have an account? <a routerLink="/login">Sign in</a>
+      </div>
+    </div>
+  </section>
+</div>

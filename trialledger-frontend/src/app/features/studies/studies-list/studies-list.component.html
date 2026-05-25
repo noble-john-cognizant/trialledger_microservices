@@ -1,0 +1,89 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Studies</h2>
+    <p class="text-muted mb-0">Manage trials, protocol numbers and lifecycle status.</p>
+  </div>
+  @if (canCreate()) {
+    <button class="btn btn-primary" (click)="openCreate()">
+      <i class="bi bi-plus-lg me-1"></i> New study
+    </button>
+  }
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <input class="form-control" style="max-width:300px" placeholder="Search by title or sponsor…"
+      (input)="search.set($any($event.target).value)">
+    <select class="form-select" style="max-width:200px" (change)="statusFilter.set($any($event.target).value)">
+      <option value="">All statuses</option>
+      @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+    </select>
+    <span class="ms-auto small text-muted">{{ filtered().length }} studies</span>
+  </div>
+</div>
+
+@if (filtered().length === 0) {
+  <tl-empty icon="bi-journal-bookmark" title="No studies"
+    description="Create one to start enrolling participants." />
+} @else {
+  <div class="row g-3">
+    @for (s of filtered(); track s.studyId) {
+      <div class="col-md-6 col-xl-4">
+        <div class="card h-100">
+          <div class="card-body d-flex flex-column gap-3">
+            <div class="d-flex justify-content-between gap-2">
+              <div>
+                <h5 class="card-title mb-1">{{ s.title }}</h5>
+                <small class="text-muted">{{ s.sponsor }} · #{{ s.protocolNumber }}</small>
+              </div>
+              <tl-status [value]="s.status" />
+            </div>
+            <div class="meta">
+              <div>
+                <small class="text-muted">Start</small>
+                <div>{{ s.startDate | date:'mediumDate' }}</div>
+              </div>
+              <div>
+                <small class="text-muted">End</small>
+                <div>{{ s.endDate | date:'mediumDate' }}</div>
+              </div>
+            </div>
+            <div class="d-flex gap-2 mt-auto flex-wrap">
+              <a class="btn btn-sm btn-outline-primary" [routerLink]="['/studies', s.studyId]">
+                <i class="bi bi-eye me-1"></i> Open
+              </a>
+              @if (canManage()) {
+                <select class="form-select form-select-sm" style="width:auto"
+                  (change)="onStatusChange(s, $any($event.target).value)">
+                  <option value="">Change status…</option>
+                  @for (st of statuses; track st) {
+                    <option [value]="st" [disabled]="st === s.status">{{ st }}</option>
+                  }
+                </select>
+              }
+              @if (canDelete()) {
+                <button class="btn btn-sm btn-outline-danger ms-auto" (click)="del(s)">
+                  <i class="bi bi-trash"></i>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+}
+
+<tl-modal [open]="createOpen()" title="Create study" (close)="createOpen.set(false)">
+  <form [formGroup]="form" class="row g-3">
+    <div class="col-12"><label class="form-label">Title</label><input class="form-control" formControlName="title"></div>
+    <div class="col-md-6"><label class="form-label">Sponsor</label><input class="form-control" formControlName="sponsor"></div>
+    <div class="col-md-6"><label class="form-label">Protocol number</label><input class="form-control" formControlName="protocolNumber"></div>
+    <div class="col-md-6"><label class="form-label">Start date</label><input type="date" class="form-control" formControlName="startDate"></div>
+    <div class="col-md-6"><label class="form-label">End date</label><input type="date" class="form-control" formControlName="endDate"></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="createOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">Create</button>
+  </div>
+</tl-modal>
