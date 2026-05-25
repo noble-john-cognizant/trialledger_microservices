@@ -53,6 +53,8 @@ export interface AssayRunRequestDTO {
   operatorId: number;
   protocolRef: string;
   metadataJson: string;
+  /** Optional URL/URI to the assay result file (CSV, PDF, …). */
+  resultUri?: string;
 }
 
 export interface AssayRunResponseDTO {

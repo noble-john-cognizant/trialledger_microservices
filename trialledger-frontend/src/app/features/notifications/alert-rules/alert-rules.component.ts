@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AlertRuleService } from '../../../core/services/alert-rule.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import { AlertRuleResponseDTO, AlertSeverity, ALL_ALERT_SEVERITIES } from '../../../core/models/notification.models';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
@@ -65,14 +66,14 @@ export class AlertRulesComponent implements OnInit {
     const op = e ? this.api.update(e.ruleId, dto) : this.api.create(dto);
     op.subscribe({
       next: () => { this.toast.success('Saved'); this.open.set(false); this.load(); },
-      error: er => this.toast.error(er?.error?.message ?? 'Failed')
+      error: er => this.toast.error(extractErrorMessage(er, 'Failed'))
     });
   }
 
   toggle(r: AlertRuleResponseDTO) {
     this.api.toggle(r.ruleId).subscribe({
       next: () => this.load(),
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 

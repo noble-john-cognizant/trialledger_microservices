@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import { ToastsComponent } from '../../../shared/toasts/toasts.component';
 
 @Component({
@@ -36,7 +37,7 @@ export class LoginComponent {
       },
       error: err => {
         this.loading.set(false);
-        this.toast.error(err?.error?.message ?? 'Invalid credentials');
+        this.toast.error(extractErrorMessage(err, 'Invalid credentials'));
       }
     });
   }

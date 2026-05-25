@@ -4,6 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import { ToastsComponent } from '../../../shared/toasts/toasts.component';
 
 @Component({
@@ -30,7 +31,7 @@ export class ForgotUsernameComponent {
     this.loading.set(true);
     this.auth.forgotUsername(this.form.getRawValue()).subscribe({
       next: r => { this.loading.set(false); this.result.set(r); },
-      error: e => { this.loading.set(false); this.toast.error(e?.error?.message ?? 'Not found'); }
+      error: e => { this.loading.set(false); this.toast.error(extractErrorMessage(e, 'Not found')); }
     });
   }
 }

@@ -6,6 +6,7 @@ import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error-message';
 import {
   SampleResponseDTO, SampleStatus, SampleType,
   ChainOfCustodyResponseDTO, AssayRunResponseDTO, SampleStorageResponseDTO,
@@ -111,7 +112,9 @@ export class SamplesComponent implements OnInit {
   });
   assayForm = this.fb.nonNullable.group({
     instrumentId: [1, Validators.required], operatorId: [1, Validators.required],
-    protocolRef: ['', Validators.required], metadataJson: ['{}']
+    protocolRef: ['', Validators.required],
+    resultUri: [''],
+    metadataJson: ['{}']
   });
 
   ngOnInit() {
@@ -135,7 +138,7 @@ export class SamplesComponent implements OnInit {
     if (this.form.invalid) return;
     this.api.create(this.form.getRawValue() as any).subscribe({
       next: () => { this.toast.success('Sample logged'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
@@ -158,7 +161,7 @@ export class SamplesComponent implements OnInit {
         this.toast.success('Custody transferred'); this.transferOpen.set(false);
         this.api.custodyForSample(s.sampleId).subscribe(v => this.custody.set(v ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
@@ -173,14 +176,14 @@ export class SamplesComponent implements OnInit {
         this.toast.success('Stored'); this.storeOpen.set(false);
         this.api.storageHistory(s.sampleId).subscribe(v => this.storage.set(v ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
   openAssay() {
     this.assayForm.reset({
       instrumentId: 1, operatorId: this.auth.user()?.userId ?? 1,
-      protocolRef: '', metadataJson: '{}'
+      protocolRef: '', resultUri: '', metadataJson: '{}'
     });
     this.assayOpen.set(true);
   }
@@ -191,7 +194,7 @@ export class SamplesComponent implements OnInit {
         this.toast.success('Assay logged'); this.assayOpen.set(false);
         this.api.assaysForSample(s.sampleId).subscribe(v => this.assays.set(v ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 }

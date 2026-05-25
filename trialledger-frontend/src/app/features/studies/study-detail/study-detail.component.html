@@ -60,11 +60,12 @@
         <div class="table-responsive">
           <table class="table table-hover mb-0 align-middle">
             <thead>
-              <tr><th>Version</th><th>Document</th><th>Effective</th><th>Status</th><th>Approver</th><th class="text-end">Actions</th></tr>
+              <tr><th>Protocol ID</th><th>Version</th><th>Document</th><th>Effective</th><th>Status</th><th>Approver</th><th class="text-end">Actions</th></tr>
             </thead>
             <tbody>
               @for (p of protocols(); track p.protocolId) {
                 <tr>
+                  <td><span class="badge bg-soft-primary">#{{ p.protocolId }}</span></td>
                   <td class="fw-semibold">v{{ p.versionNumber }}</td>
                   <td><a [href]="p.documentUrl" target="_blank" class="mono small truncate">{{ p.documentUrl }}</a></td>
                   <td><small class="text-muted">{{ p.effectiveDate | date:'mediumDate' }}</small></td>
@@ -73,7 +74,10 @@
                   <td class="text-end">
                     @if (canApproveProtocol()) {
                       <button class="btn btn-sm btn-success me-1" (click)="approve(p)"
-                        [disabled]="p.status === 'APPROVED'">Approve</button>
+                        [disabled]="p.status !== 'UNDER_REVIEW'"
+                        [title]="p.status === 'UNDER_REVIEW' ? 'Approve this protocol version' : 'Only versions UNDER_REVIEW can be approved'">
+                        Approve
+                      </button>
                     }
                     @if (canManageProtocol()) {
                       <select class="form-select form-select-sm d-inline-block me-1" style="width:auto"

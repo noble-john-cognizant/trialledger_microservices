@@ -5,6 +5,7 @@ import { RouterLink } from '@angular/router';
 import { StudyService } from '../../../core/services/study.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { AuthService } from '../../../core/auth/auth.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import {
   StudyResponseDto, StudyStatus, ALL_STUDY_STATUSES
 } from '../../../core/models/study.models';
@@ -64,7 +65,7 @@ export class StudiesListComponent implements OnInit {
     if (this.form.invalid) return;
     this.api.create(this.form.getRawValue()).subscribe({
       next: () => { this.toast.success('Study created'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Create failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Create failed'))
     });
   }
 

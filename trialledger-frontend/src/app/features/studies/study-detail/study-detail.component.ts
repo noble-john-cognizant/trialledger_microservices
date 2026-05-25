@@ -8,6 +8,7 @@ import { SampleService } from '../../../core/services/sample.service';
 import { AdverseEventService } from '../../../core/services/adverse-event.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 import {
   StudyResponseDto, ProtocolVersionResponseDto, ProtocolStatus, ALL_PROTOCOL_STATUSES
 } from '../../../core/models/study.models';
@@ -85,7 +86,7 @@ export class StudyDetailComponent implements OnInit {
     if (this.protForm.invalid) return;
     this.studyApi.addProtocol(Number(this.id), this.protForm.getRawValue()).subscribe({
       next: () => { this.toast.success('Protocol version added'); this.protOpen.set(false); this.reloadProtocols(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
   approve(p: ProtocolVersionResponseDto) {

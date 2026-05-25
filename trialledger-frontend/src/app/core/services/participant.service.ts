@@ -18,6 +18,10 @@ export class ParticipantService {
   get(id: number): Observable<ParticipantResponseDTO> {
     return this.http.get<ParticipantResponseDTO>(`${this.base}/${id}`);
   }
+  /** Find the participant by their unique phone (contactInfo on the backend). */
+  byPhone(phone: string): Observable<ParticipantResponseDTO> {
+    return this.http.get<ParticipantResponseDTO>(`${this.base}/by-phone/${encodeURIComponent(phone)}`);
+  }
   byStudy(studyId: number): Observable<ParticipantResponseDTO[]> {
     return this.http.get<ParticipantResponseDTO[]>(`${this.base}/study/${studyId}`);
   }

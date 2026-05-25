@@ -40,4 +40,46 @@
 .auth-form {
   display: flex; align-items: center; justify-content: center; padding: 2.5rem 1.5rem;
 }
-.auth-card { width: 100%; max-width: 420px; }
+.auth-card { width: 100%; max-width: 460px; }
+
+/* ===== OTP step indicator ===== */
+.auth-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.auth-steps li {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: .95rem;
+}
+.auth-steps li.active { color: #fff; font-weight: 600; }
+.auth-steps li.done   { color: rgba(255, 255, 255, 0.9); }
+.auth-steps .dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: .85rem;
+}
+.auth-steps li.active .dot {
+  background: #fff; color: var(--tl-primary-dark);
+  border-color: #fff;
+}
+.auth-steps li.done .dot {
+  background: var(--tl-primary);
+  color: #fff;
+}
+
+/* ===== OTP input styling ===== */
+.otp-input {
+  letter-spacing: .35em;
+  font-size: 1.1rem;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  text-align: center;
+  font-weight: 600;
+}

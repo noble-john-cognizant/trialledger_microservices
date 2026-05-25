@@ -1,9 +1,9 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { ParticipantService } from '../../core/services/participant.service';
+import { UserService } from '../../core/services/user.service';
 import { StudyService } from '../../core/services/study.service';
 import { ConsentService } from '../../core/services/consent.service';
 import { VisitService } from '../../core/services/visit.service';
@@ -13,68 +13,44 @@ import { ConsentResponseDTO } from '../../core/models/consent.models';
 import { VisitResponseDto } from '../../core/models/visit.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { extractErrorMessage } from '../../core/utils/error-message';
 
 /**
- * localStorage namespace. The actual key is `${LINK_KEY_PREFIX}${userId}` so
- * each logged-in user has their own linkage and accounts can't leak across
- * each other on a shared browser.
- */
-const LINK_KEY_PREFIX = 'tl_participant_id:';
-
-/** Legacy unscoped key from earlier versions — wiped on startup so previously
- * linked IDs don't bleed across accounts. */
-const LEGACY_LINK_KEY = 'tl_participant_id';
-
-/**
- * Home page tailored to a PARTICIPANT-role user.
+ * Home page for a logged-in PARTICIPANT.
  *
- * A PARTICIPANT can call GET /api/participants/{id} for their own record, but
- * the backend doesn't expose a userId → participantId mapping endpoint.
- * The first time the participant visits this page they link their enrollment
- * by entering the participantId provided by their coordinator. We cache it
- * in localStorage under a key scoped by their userId so different participants
- * on the same browser keep their own linkages.
+ * Auto-discovery flow:
+ *   1. Fetch the logged-in user's record (/api/users/{id}) to read their phone
+ *   2. Call /api/participants/by-phone/{phone} to find the matching enrollment
+ *   3. Load consents, visits, study, protocols for that participant
  *
- * Permission-gated sections:
- *   - Study card body shows full details only if STUDY_VIEW is allowed
- *     (otherwise we just show the study ID with a hint).
- *   - Protocol info is shown only if PROTOCOL_VIEW is allowed.
+ * No manual ID entry is required — the linkage is derived from the phone
+ * number captured at signup and stored uniquely on the Participant row.
  */
 @Component({
   selector: 'tl-participant-home',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, DatePipe,
-    StatusBadgeComponent, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, DatePipe, StatusBadgeComponent, EmptyStateComponent],
   templateUrl: './participant-home.component.html',
   styleUrls: ['./participant-home.component.css']
 })
 export class ParticipantHomeComponent implements OnInit {
   private auth = inject(AuthService);
   private partApi = inject(ParticipantService);
+  private userApi = inject(UserService);
   private studyApi = inject(StudyService);
   private consentApi = inject(ConsentService);
   private visitApi = inject(VisitService);
 
   user = this.auth.user;
 
-  constructor() {
-    // One-time migration: drop the old unscoped key so a previously linked ID
-    // from another account can't be re-read by a new participant.
-    if (localStorage.getItem(LEGACY_LINK_KEY) !== null) {
-      localStorage.removeItem(LEGACY_LINK_KEY);
-    }
-  }
+  participant = signal<ParticipantResponseDTO | null>(null);
+  study       = signal<StudyResponseDto | null>(null);
+  protocols   = signal<ProtocolVersionResponseDto[]>([]);
+  consents    = signal<ConsentResponseDTO[]>([]);
+  visits      = signal<VisitResponseDto[]>([]);
 
-  participantId = signal<number | null>(this.readLinkedId());
-  participant   = signal<ParticipantResponseDTO | null>(null);
-  study         = signal<StudyResponseDto | null>(null);
-  protocols     = signal<ProtocolVersionResponseDto[]>([]);
-  consents      = signal<ConsentResponseDTO[]>([]);
-  visits        = signal<VisitResponseDto[]>([]);
-
-  loading    = signal(false);
-  linkInput  = signal<number | null>(null);
-  linkError  = signal('');
+  loading   = signal(true);
+  lookupErr = signal('');
 
   canViewStudy     = computed(() => this.auth.can('STUDY_VIEW'));
   canViewProtocols = computed(() => this.auth.can('PROTOCOL_VIEW'));
@@ -95,76 +71,60 @@ export class ParticipantHomeComponent implements OnInit {
   });
 
   ngOnInit() {
-    if (this.participantId()) this.loadAll();
+    this.autoLink();
   }
+
+  /** Try once with whatever we have; expose retry to the user via the UI. */
+  retry() { this.autoLink(); }
 
   initials(name: string | undefined): string {
     if (!name) return '?';
     return name.split(' ').map(s => s[0]).slice(0, 2).join('').toUpperCase();
   }
 
-  link() {
-    this.linkError.set('');
-    const id = this.linkInput();
-    if (!id || id <= 0) {
-      this.linkError.set('Enter a valid participant ID.');
+  private autoLink() {
+    this.lookupErr.set('');
+    const u = this.user();
+    if (!u) {
+      this.loading.set(false);
+      this.lookupErr.set('You must be signed in to view this page.');
       return;
     }
-    const key = this.storageKey();
-    if (!key) {
-      this.linkError.set('You must be signed in to link an enrollment.');
-      return;
-    }
+
     this.loading.set(true);
-    this.partApi.get(id).subscribe({
-      next: p => {
-        localStorage.setItem(key, String(id));
-        this.participantId.set(id);
-        this.participant.set(p);
-        this.loading.set(false);
-        this.loadDependents(id, p);
+
+    // Step 1: get my user record to read the phone number.
+    this.userApi.get(u.userId).subscribe({
+      next: full => {
+        if (!full?.phone) {
+          this.loading.set(false);
+          this.lookupErr.set('Your account has no phone number on file. Please contact your coordinator.');
+          return;
+        }
+        // Step 2: look up my participant row by phone.
+        this.partApi.byPhone(full.phone).subscribe({
+          next: p => {
+            this.participant.set(p);
+            this.loading.set(false);
+            this.loadDependents(p);
+          },
+          error: err => {
+            this.loading.set(false);
+            this.lookupErr.set(
+              extractErrorMessage(err,
+                "We couldn't find an enrollment matching your phone number. Your coordinator may not have enrolled you yet.")
+            );
+          }
+        });
       },
-      error: () => {
+      error: err => {
         this.loading.set(false);
-        this.linkError.set('Participant not found or access denied. Check the ID with your coordinator.');
+        this.lookupErr.set(extractErrorMessage(err, 'Could not load your account details.'));
       }
     });
   }
 
-  unlink() {
-    const key = this.storageKey();
-    if (key) localStorage.removeItem(key);
-    this.participantId.set(null);
-    this.participant.set(null);
-    this.study.set(null);
-    this.protocols.set([]);
-    this.consents.set([]);
-    this.visits.set([]);
-    this.linkInput.set(null);
-  }
-
-  private loadAll() {
-    const pid = this.participantId();
-    if (!pid) return;
-    this.loading.set(true);
-    this.partApi.get(pid).subscribe({
-      next: p => {
-        this.participant.set(p);
-        this.loading.set(false);
-        this.loadDependents(pid, p);
-      },
-      error: () => {
-        // stale localStorage — clear it and let the user re-link
-        this.loading.set(false);
-        this.linkError.set('Saved enrollment could not be loaded. Please re-enter your participant ID.');
-        const key = this.storageKey();
-        if (key) localStorage.removeItem(key);
-        this.participantId.set(null);
-      }
-    });
-  }
-
-  private loadDependents(pid: number, p: ParticipantResponseDTO) {
+  private loadDependents(p: ParticipantResponseDTO) {
     if (this.canViewStudy()) {
       this.studyApi.get(p.studyId).subscribe({
         next: s => this.study.set(s),
@@ -178,28 +138,16 @@ export class ParticipantHomeComponent implements OnInit {
       });
     }
     if (this.canViewConsent()) {
-      this.consentApi.byParticipant(pid).subscribe({
-        next: v => this.consents.set(v ?? [])
+      this.consentApi.byParticipant(p.participantId).subscribe({
+        next: v => this.consents.set(v ?? []),
+        error: () => this.consents.set([])
       });
     }
     if (this.canViewVisits()) {
-      this.visitApi.byParticipant(pid).subscribe({
-        next: v => this.visits.set(v ?? [])
+      this.visitApi.byParticipant(p.participantId).subscribe({
+        next: v => this.visits.set(v ?? []),
+        error: () => this.visits.set([])
       });
     }
-  }
-
-  /** Per-user localStorage key, or null when no one is signed in. */
-  private storageKey(): string | null {
-    const uid = this.auth.user()?.userId;
-    return uid != null ? `${LINK_KEY_PREFIX}${uid}` : null;
-  }
-
-  private readLinkedId(): number | null {
-    const key = this.storageKey();
-    if (!key) return null;
-    const raw = localStorage.getItem(key);
-    const n = raw ? Number(raw) : NaN;
-    return Number.isFinite(n) && n > 0 ? n : null;
   }
 }

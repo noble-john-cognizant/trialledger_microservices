@@ -7,6 +7,7 @@ import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
+import { extractErrorMessage } from '../../core/utils/error-message';
 import {
   VisitResponseDto, VisitStatus, VisitType,
   ALL_VISIT_STATUSES, ALL_VISIT_TYPES
@@ -125,7 +126,7 @@ export class VisitsComponent implements OnInit {
     if (this.form.invalid) return;
     this.api.schedule(this.form.getRawValue() as any).subscribe({
       next: () => { this.toast.success('Scheduled'); this.schedOpen.set(false); this.load(); },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
 
@@ -159,7 +160,7 @@ export class VisitsComponent implements OnInit {
         this.toast.success('Captured'); this.captureOpen.set(false);
         this.srcApi.byVisit(v.visitId).subscribe(s => this.sourceData.set(s ?? []));
       },
-      error: e => this.toast.error(e?.error?.message ?? 'Failed')
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
     });
   }
   verify(sd: SourceDataResponseDto) {

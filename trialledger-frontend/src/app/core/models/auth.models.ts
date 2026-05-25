@@ -21,8 +21,15 @@ export interface LoginResponseDTO {
   createdAt: string;
 }
 
+/** Step 1 — request an OTP for the given email. */
+export interface ForgotPasswordRequestOtpDTO {
+  email: string;
+}
+
+/** Step 2 — submit the OTP plus the new password. */
 export interface ForgotPasswordDTO {
   email: string;
+  otp: string;
   newPassword: string;
 }
 
