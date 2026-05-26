@@ -1,0 +1,12 @@
+.nav-pills .nav-link {
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  color: #475569;
+  margin-right: .5rem;
+}
+.nav-pills .nav-link.active {
+  background: var(--tl-primary);
+  color: #fff;
+  border-color: var(--tl-primary);
+}
+pre { white-space: pre-wrap; word-break: break-all; }

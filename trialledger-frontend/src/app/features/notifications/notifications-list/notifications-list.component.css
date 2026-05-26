@@ -1,0 +1,20 @@
+.chip {
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  color: #475569;
+  border-radius: 999px;
+  padding: .35rem .85rem;
+  font-weight: 600;
+}
+.chip-active {
+  background: var(--tl-primary);
+  color: #fff !important;
+  border-color: var(--tl-primary);
+}
+.notif-row {
+  display: flex;
+  align-items: center;
+}
+.notif-row.unread {
+  background: #eff5ff;
+}

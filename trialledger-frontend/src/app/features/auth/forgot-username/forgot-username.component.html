@@ -1,0 +1,45 @@
+<tl-toasts />
+<div class="auth-shell">
+  <aside class="auth-hero d-none d-lg-flex flex-column justify-content-between">
+    <div>
+      <div class="brand d-flex align-items-center gap-2">
+        <span class="brand-logo">TL</span><span class="fs-4 fw-bold">TrialLedger</span>
+      </div>
+      <h1 class="mt-5 fw-bold">Recover your username.</h1>
+      <p class="lead opacity-75">Confirm your phone &amp; password and we'll return your email.</p>
+    </div>
+  </aside>
+
+  <section class="auth-form">
+    <div class="auth-card">
+      <h2 class="fw-bold mb-1">Forgot username</h2>
+      <p class="text-muted mb-4">We will reply with the email tied to your account.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Phone number</label>
+          <input class="form-control" formControlName="phoneNumber" maxlength="10">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Password</label>
+          <input type="password" class="form-control" formControlName="password">
+        </div>
+        <button class="btn btn-primary w-100" type="submit" [disabled]="form.invalid || loading()">
+          @if (loading()) { <span class="spinner-border spinner-border-sm me-2"></span> Looking up… }
+          @else { Retrieve username }
+        </button>
+      </form>
+
+      @if (result()) {
+        <div class="alert alert-success mt-3 mb-0">
+          <div class="small text-muted">Username:</div>
+          <div class="mono fw-bold">{{ result() }}</div>
+        </div>
+      }
+
+      <div class="text-center mt-4 small">
+        <a routerLink="/login">← Back to sign in</a>
+      </div>
+    </div>
+  </section>
+</div>
