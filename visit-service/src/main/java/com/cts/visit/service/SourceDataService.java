@@ -48,7 +48,10 @@ public class SourceDataService {
     // 1. Capture source data
     public SourceDataResponseDto addSourceData(SourceDataRequestDto request) throws JsonProcessingException {
 
+        // Validate Visit (same service)
         Visit visit = visitRepository.findById(request.getVisitId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Visit not found"));
                 .orElseThrow(() -> new ResourceNotFoundException("Visit not found"));
 
         String filePath = request.getDataUri();

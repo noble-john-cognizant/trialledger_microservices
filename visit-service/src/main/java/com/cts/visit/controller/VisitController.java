@@ -51,7 +51,15 @@ public class VisitController {
         );
     }
 
-   
+    /**
+     * Update the status of a visit. When marking a visit COMPLETED, an
+     * optional {@code performedAt} timestamp may be supplied (defaults to
+     * "now" if absent). For non-COMPLETED transitions the parameter is
+     * ignored and any previously stored performedAt is cleared.
+     *
+     * Example:
+     *   PUT /api/visits/42/status?status=COMPLETED&performedAt=2026-05-25T14:30
+     */
     @PutMapping("/{visitId}/status")
     @PreAuthorize("hasAnyRole('PI','COORDINATOR')")
     public ResponseEntity<ApiResponseDto<VisitResponseDto>> updateVisitStatus(
