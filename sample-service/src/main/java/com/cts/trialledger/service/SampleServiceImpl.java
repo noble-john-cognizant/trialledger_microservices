@@ -2,6 +2,7 @@ package com.cts.trialledger.service;
 
 import com.cts.trialledger.client.*;
 import com.cts.trialledger.dto.*;
+import com.cts.trialledger.entity.ChainOfCustody;
 import com.cts.trialledger.entity.Sample;
 import com.cts.trialledger.exception.ResourceNotFoundException;
 import com.cts.trialledger.exception.SampleNotFoundException;

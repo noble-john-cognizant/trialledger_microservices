@@ -1,6 +1,6 @@
 package com.cts.trialledger.client;
 
-//import com.cts.trialledger.dto.KPIResponseDTO;
+import com.cts.trialledger.dto.KPIResponseDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;

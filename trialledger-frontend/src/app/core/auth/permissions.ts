@@ -45,10 +45,10 @@ export const PERMISSIONS = {
   CONSENT_VERIFY:          ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'AUDITOR'],
 
   // Visits
-  VISIT_SCHEDULE:          ['ADMIN', 'PI', 'COORDINATOR'],
+  VISIT_SCHEDULE:          [ 'PI', 'COORDINATOR'],
   VISIT_VIEW:              ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'DATA_MANAGER', 'PARTICIPANT'],
-  VISIT_UPDATE:            ['ADMIN', 'PI', 'COORDINATOR'],
-  VISIT_DELETE:            ['ADMIN', 'PI', 'COORDINATOR', 'PARTICIPANT'],
+  VISIT_UPDATE:            [ 'PI', 'COORDINATOR'],
+  VISIT_DELETE:            [ 'PI', 'COORDINATOR', 'PARTICIPANT'],
 
   // Source data
   SOURCE_CREATE:           ['ADMIN', 'TECHNICIAN', 'COORDINATOR'],

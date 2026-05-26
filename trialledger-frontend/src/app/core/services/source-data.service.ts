@@ -11,19 +11,28 @@ export class SourceDataService {
   private base = `${environment.apiBase}/api/sourcedata`;
 
   create(dto: SourceDataRequestDto): Observable<SourceDataResponseDto> {
-    return this.http.post<ApiResponseDto<SourceDataResponseDto>>(`${this.base}/visit`, dto)
-      .pipe(map(r => r.data));
+    return this.http
+      .post<ApiResponseDto<SourceDataResponseDto>>(`${this.base}/visit`, dto)
+      .pipe(map((r) => r.data));
   }
   get(id: number): Observable<SourceDataResponseDto> {
-    return this.http.get<ApiResponseDto<SourceDataResponseDto>>(`${this.base}/${id}`)
-      .pipe(map(r => r.data));
+    return this.http
+      .get<ApiResponseDto<SourceDataResponseDto>>(`${this.base}/${id}`)
+      .pipe(map((r) => r.data));
   }
   verify(id: number): Observable<boolean> {
-    return this.http.get<ApiResponseDto<boolean>>(`${this.base}/verify/${id}`)
-      .pipe(map(r => r.data));
+    return this.http
+      .get<ApiResponseDto<boolean>>(`${this.base}/verify/${id}`)
+      .pipe(map((r) => r.data));
   }
   byVisit(visitId: number): Observable<SourceDataResponseDto[]> {
-    return this.http.get<ApiResponseDto<SourceDataResponseDto[]>>(`${this.base}/byVisit/${visitId}`)
-      .pipe(map(r => r.data));
+    return this.http
+      .get<ApiResponseDto<SourceDataResponseDto[]>>(`${this.base}/byVisit/${visitId}`)
+      .pipe(map((r) => r.data));
+  }
+
+  /** GET /api/sourcedata/view/{id} — streams the file as a Blob (JWT attached by interceptor) */
+  viewFile(id: number): Observable<Blob> {
+    return this.http.get(`${this.base}/view/${id}`, { responseType: 'blob' });
   }
 }

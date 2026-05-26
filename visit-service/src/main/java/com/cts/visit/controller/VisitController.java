@@ -40,7 +40,7 @@ public class VisitController {
 
     // 2. Get all visits for a participant
     @GetMapping("/participant/{participantId}")
-    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','PARTICIPANT')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','PARTICIPANT')")
     public ResponseEntity<ApiResponseDto<List<VisitResponseDto>>> getVisitsByParticipant(
             @PathVariable Long participantId) {
 

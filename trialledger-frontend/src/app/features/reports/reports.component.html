@@ -1,149 +1,3 @@
-<!--<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">-->
-<!--  <div>-->
-<!--    <h2 class="fw-bold mb-1">Reports &amp; KPIs</h2>-->
-<!--    <p class="text-muted mb-0">Generate compliance reports and track key performance indicators.</p>-->
-<!--  </div>-->
-<!--  <div class="d-flex gap-2">-->
-<!--    @if (canCreateReport()) {-->
-<!--      <button class="btn btn-outline-primary" (click)="openReport()">-->
-<!--        <i class="bi bi-file-earmark-plus me-1"></i> Report-->
-<!--      </button>-->
-<!--    }-->
-<!--    @if (canCreateKpi()) {-->
-<!--      <button class="btn btn-primary" (click)="openKpi()">-->
-<!--        <i class="bi bi-bullseye me-1"></i> KPI-->
-<!--      </button>-->
-<!--    }-->
-<!--  </div>-->
-<!--</div>-->
-
-<!--<div class="row g-3">-->
-<!--  @if (canViewReports()) {-->
-<!--    <div class="col-lg-6">-->
-<!--      <div class="card h-100">-->
-<!--        <div class="card-header bg-white">-->
-<!--          <h6 class="fw-bold mb-0">Reports</h6>-->
-<!--          <small class="text-muted">Generated reports per study and scope</small>-->
-<!--        </div>-->
-<!--        <div class="card-body">-->
-<!--          <div class="d-flex gap-2 mb-3">-->
-<!--            <select class="form-select form-select-sm" style="max-width:200px"-->
-<!--              (change)="scopeFilter.set($any($event.target).value); loadReports()">-->
-<!--              <option value="">All scopes</option>-->
-<!--              @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }-->
-<!--            </select>-->
-<!--          </div>-->
-
-<!--          @if (reports().length === 0) {-->
-<!--            <tl-empty icon="bi-bar-chart" title="No reports yet" description="Create a report to get started." />-->
-<!--          } @else {-->
-<!--            <ul class="list-unstyled mb-0">-->
-<!--              @for (r of reports(); track r.reportId) {-->
-<!--                <li class="report-item">-->
-<!--                  <div class="d-flex justify-content-between align-items-center mb-1">-->
-<!--                    <div>-->
-<!--                      <span class="fw-semibold">Report #{{ r.reportId }}</span>-->
-<!--                      <span class="badge bg-soft-primary ms-2">{{ r.scope }}</span>-->
-<!--                    </div>-->
-<!--                    @if (r.reportUri) {-->
-<!--                      <a [href]="r.reportUri" target="_blank" class="btn btn-sm btn-outline-primary">Open</a>-->
-<!--                    }-->
-<!--                  </div>-->
-<!--                  <div class="small text-muted">Study {{ r.studyId }} · {{ r.generatedAt | date:'medium' }}</div>-->
-<!--                  <details class="mt-2">-->
-<!--                    <summary class="small text-muted">Metrics JSON</summary>-->
-<!--                    <pre class="mono small mb-0 mt-2">{{ r.metricsJson | json }}</pre>-->
-<!--                  </details>-->
-<!--                </li>-->
-<!--              }-->
-<!--            </ul>-->
-<!--          }-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  }-->
-
-<!--  @if (canViewKpis()) {-->
-<!--    <div class="col-lg-6">-->
-<!--      <div class="card h-100">-->
-<!--        <div class="card-header bg-white">-->
-<!--          <h6 class="fw-bold mb-0">KPIs</h6>-->
-<!--          <small class="text-muted">Key metrics with targets</small>-->
-<!--        </div>-->
-<!--        <div class="card-body">-->
-<!--          @if (kpis().length === 0) {-->
-<!--            <tl-empty icon="bi-bullseye" title="No KPIs configured" description="Define a KPI to monitor performance." />-->
-<!--          } @else {-->
-<!--            @for (k of kpis(); track k.kpiId) {-->
-<!--              <div class="kpi-tile">-->
-<!--                <div>-->
-<!--                  <div class="fw-semibold">{{ k.name }}</div>-->
-<!--                  <div class="small text-muted">{{ k.definition }}</div>-->
-<!--                  <div class="small text-muted">Period: {{ k.reportingPeriod }}</div>-->
-<!--                </div>-->
-<!--                <div class="text-end">-->
-<!--                  <div class="fs-4 fw-bold text-tl-primary">-->
-<!--                    {{ k.currentValue }}<small class="text-muted">/{{ k.target }}</small>-->
-<!--                  </div>-->
-<!--                  <div class="progress" style="width:140px;height:6px">-->
-<!--                    <div class="progress-bar bg-primary" [style.width.%]="meter(k)"></div>-->
-<!--                  </div>-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            }-->
-<!--          }-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  }-->
-<!--</div>-->
-
-<!--<tl-modal [open]="reportOpen()" title="Generate report" (close)="reportOpen.set(false)">-->
-<!--  <form [formGroup]="reportForm" class="row g-3">-->
-<!--    <div class="col-md-6">-->
-<!--      <label class="form-label">Study</label>-->
-<!--      <select class="form-select" formControlName="studyId">-->
-<!--        <option [ngValue]="null">Select…</option>-->
-<!--        @for (s of studies(); track s.studyId) { <option [ngValue]="s.studyId">{{ s.title }}</option> }-->
-<!--      </select>-->
-<!--    </div>-->
-<!--    <div class="col-md-6">-->
-<!--      <label class="form-label">Scope</label>-->
-<!--      <select class="form-select" formControlName="scope">-->
-<!--        @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }-->
-<!--      </select>-->
-<!--    </div>-->
-<!--    <div class="col-12"><label class="form-label">Reporting period</label><input class="form-control" formControlName="reportingPeriod" placeholder="e.g. Q2-2026"></div>-->
-<!--    <div class="col-12"><label class="form-label">Parameters JSON</label><textarea class="form-control" formControlName="parametersJson" rows="3"></textarea></div>-->
-<!--  </form>-->
-<!--  <div modalFooter>-->
-<!--    <button class="btn btn-light" (click)="reportOpen.set(false)">Cancel</button>-->
-<!--    <button class="btn btn-primary" [disabled]="reportForm.invalid" (click)="submitReport()">Generate</button>-->
-<!--  </div>-->
-<!--</tl-modal>-->
-
-<!--<tl-modal [open]="kpiOpen()" title="Create KPI" (close)="kpiOpen.set(false)">-->
-<!--  <form [formGroup]="kpiForm" class="row g-3">-->
-<!--    <div class="col-12"><label class="form-label">Name</label><input class="form-control" formControlName="name"></div>-->
-<!--    <div class="col-12"><label class="form-label">Definition</label><textarea class="form-control" formControlName="definition"></textarea></div>-->
-<!--    <div class="col-md-6"><label class="form-label">Target</label><input type="number" class="form-control" formControlName="target"></div>-->
-<!--    <div class="col-md-6"><label class="form-label">Reporting period</label><input class="form-control" formControlName="reportingPeriod" placeholder="e.g. Monthly"></div>-->
-<!--  </form>-->
-<!--  <div modalFooter>-->
-<!--    <button class="btn btn-light" (click)="kpiOpen.set(false)">Cancel</button>-->
-<!--    <button class="btn btn-primary" [disabled]="kpiForm.invalid" (click)="submitKpi()">Save</button>-->
-<!--  </div>-->
-<!--</tl-modal>-->
-
-
-
-
-
-
-
-
-
-
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
   <div>
     <h2 class="fw-bold mb-1">Reports &amp; KPIs</h2>
@@ -151,34 +5,34 @@
   </div>
   <div class="d-flex gap-2">
     @if (canCreateReport()) {
-    <button class="btn btn-outline-primary" (click)="openReport()">
-      <i class="bi bi-file-earmark-plus me-1"></i> Report
-    </button>
+      <button class="btn btn-outline-primary" (click)="openReport()">
+        <i class="bi bi-file-earmark-plus me-1"></i> Report
+      </button>
     }
     @if (canCreateKpi()) {
-    <button class="btn btn-primary" (click)="openKpi()">
-      <i class="bi bi-bullseye me-1"></i> KPI
-    </button>
+      <button class="btn btn-primary" (click)="openKpi()">
+        <i class="bi bi-bullseye me-1"></i> KPI
+      </button>
     }
   </div>
 </div>
 
 <div class="row g-3">
   @if (canViewReports()) {
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header bg-white">
-        <h6 class="fw-bold mb-0">Reports</h6>
-        <small class="text-muted">Generated reports per study and scope</small>
-      </div>
-      <div class="card-body">
-        <div class="d-flex gap-2 mb-3">
-          <select class="form-select form-select-sm" style="max-width:200px"
-                  (change)="scopeFilter.set($any($event.target).value); loadReports()">
-            <option value="">All scopes</option>
-            @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }
-          </select>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0">Reports</h6>
+          <small class="text-muted">Generated reports per study and scope</small>
         </div>
+        <div class="card-body">
+          <div class="d-flex gap-2 mb-3">
+            <select class="form-select form-select-sm" style="max-width:200px"
+              (change)="scopeFilter.set($any($event.target).value); loadReports()">
+              <option value="">All scopes</option>
+              @for (s of scopes; track s) { <option [value]="s">{{ s }}</option> }
+            </select>
+          </div>
 
         @if (reports().length === 0) {
         <tl-empty icon="bi-bar-chart" title="No reports yet" description="Create a report to get started." />
@@ -214,37 +68,37 @@
   }
 
   @if (canViewKpis()) {
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header bg-white">
-        <h6 class="fw-bold mb-0">KPIs</h6>
-        <small class="text-muted">Key metrics with targets</small>
-      </div>
-      <div class="card-body">
-        @if (kpis().length === 0) {
-        <tl-empty icon="bi-bullseye" title="No KPIs configured" description="Define a KPI to monitor performance." />
-        } @else {
-        @for (k of kpis(); track k.kpiId) {
-        <div class="kpi-tile">
-          <div>
-            <div class="fw-semibold">{{ k.name }}</div>
-            <div class="small text-muted">{{ k.definition }}</div>
-            <div class="small text-muted">Period: {{ k.reportingPeriod }}</div>
-          </div>
-          <div class="text-end">
-            <div class="fs-4 fw-bold text-tl-primary">
-              {{ k.currentValue }}<small class="text-muted">/{{ k.target }}</small>
-            </div>
-            <div class="progress" style="width:140px;height:6px">
-              <div class="progress-bar bg-primary" [style.width.%]="meter(k)"></div>
-            </div>
-          </div>
+    <div class="col-lg-6">
+      <div class="card h-100">
+        <div class="card-header bg-white">
+          <h6 class="fw-bold mb-0">KPIs</h6>
+          <small class="text-muted">Key metrics with targets</small>
         </div>
-        }
-        }
+        <div class="card-body">
+          @if (kpis().length === 0) {
+            <tl-empty icon="bi-bullseye" title="No KPIs configured" description="Define a KPI to monitor performance." />
+          } @else {
+            @for (k of kpis(); track k.kpiId) {
+              <div class="kpi-tile">
+                <div>
+                  <div class="fw-semibold">{{ k.name }}</div>
+                  <div class="small text-muted">{{ k.definition }}</div>
+                  <div class="small text-muted">Period: {{ k.reportingPeriod }}</div>
+                </div>
+                <div class="text-end">
+                  <div class="fs-4 fw-bold text-tl-primary">
+                    {{ k.currentValue }}<small class="text-muted">/{{ k.target }}</small>
+                  </div>
+                  <div class="progress" style="width:140px;height:6px">
+                    <div class="progress-bar bg-primary" [style.width.%]="meter(k)"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
       </div>
     </div>
-  </div>
   }
 </div>
 

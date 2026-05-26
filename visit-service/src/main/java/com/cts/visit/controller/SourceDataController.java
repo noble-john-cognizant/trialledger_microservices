@@ -6,6 +6,9 @@ import com.cts.visit.dto.SourceDataResponseDto;
 import com.cts.visit.service.SourceDataService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import jakarta.validation.Valid;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -78,5 +81,25 @@ public class SourceDataController {
         return ResponseEntity.ok(
                 new ApiResponseDto<>("SUCCESS", "Source data fetched successfully", response)
         );
+    }
+
+    // ── NEW ENDPOINT ──────────────────────────────────────────────────────────
+    // 5. View / download the actual source file for a given sourceDataId
+    //    The file is read from its server-side path (dataUri) and streamed
+    //    back with the correct Content-Type so the browser can display it.
+    //    Roles: same as SOURCE_VIEW permission.
+    @GetMapping("/view/{sourceDataId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
+    public ResponseEntity<Resource> viewSourceFile(@PathVariable Long sourceDataId) {
+
+        // Returns a FileSystemResource along with the detected MIME type
+        SourceDataService.FileResourceResult result = sourceDataService.getSourceFile(sourceDataId);
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(result.contentType()))
+                // inline = open in browser tab; attachment = force-download
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "inline; filename=\"" + result.filename() + "\"")
+                .body(result.resource());
     }
 }
