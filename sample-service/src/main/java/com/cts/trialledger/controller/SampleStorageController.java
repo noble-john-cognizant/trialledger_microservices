@@ -25,13 +25,13 @@ public class SampleStorageController {
     }
 
     @GetMapping("/storage/{storageId}/retrieve")
-    @PreAuthorize("hasAnyRole('PI','TECHNICIAN','DATA_MANAGER','TECHNICIAN')")
+    @PreAuthorize("hasAnyRole('PI','TECHNICIAN','DATA_MANAGER','ADMIN')")
     public SampleStorageResponseDTO retrieveSample(@PathVariable Long storageId) {
         return sampleStorageService.retrieveSample(storageId);
     }
 
     @GetMapping("/{sampleId}/storage")
-    @PreAuthorize("hasAnyRole('PI','TECHNICIAN','DATA_MANAGER')")
+    @PreAuthorize("hasAnyRole('PI','TECHNICIAN','DATA_MANAGER','ADMIN')")
     public List<SampleStorageResponseDTO> getStorageHistory(@PathVariable Long sampleId) {
         return sampleStorageService.getStorageHistory(sampleId);
     }

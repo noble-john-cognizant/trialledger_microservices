@@ -3,6 +3,7 @@ package com.cts.trialledger.controller;
 import com.cts.trialledger.dto.*;
 import com.cts.trialledger.service.ConsentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PostAuthorize;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,7 +26,7 @@ public class ConsentController {
     //  GET BY PARTICIPANT
     @GetMapping("/participant/{id}")
     @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','TECHNICIAN','COMPLIANCE','PARTICIPANT','AUDITOR')")
-    public List<ConsentResponseDTO> getByParticipant(@PathVariable Long id) {
+     public List<ConsentResponseDTO> getByParticipant(@PathVariable Long id) {
         return service.getConsentsByParticipant(id);
     }
 

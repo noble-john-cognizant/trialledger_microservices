@@ -31,10 +31,6 @@ export class AuthService {
     );
   }
 
-  // Self-service register was removed. Accounts are created either by an
-  // admin (via UserService.registerByAdmin) or implicitly when a coordinator
-  // enrolls a participant. The corresponding endpoint here is gone too.
-
   /** Step 1 — ask the server to generate an OTP and print it to its console. */
   requestPasswordResetOtp(dto: ForgotPasswordRequestOtpDTO): Observable<string> {
     return this.http.post(`${this.api}/forgot-password/request-otp`, dto, { responseType: 'text' });
