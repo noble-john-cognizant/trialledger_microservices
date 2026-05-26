@@ -15,6 +15,8 @@ import com.cts.trialledger.repository.SampleRepository;
 import com.cts.trialledger.util.UserUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -192,5 +194,24 @@ public class AssayRunServiceImpl implements AssayRunService {
             );
         }
         return assays;
+    }
+
+    @Override
+    public Resource downloadResult(Long assayId) {
+        AssayRun assayRun = assayRunRepository.findById(assayId)
+                .orElseThrow(() -> new AssayRunNotFoundException(assayId));
+
+        String uri = assayRun.getResultUri();
+        if (uri == null || uri.isBlank()) {
+            throw new ResourceNotFoundException("No result file recorded for assay id=" + assayId);
+        }
+
+        Path filePath = Paths.get(uri);
+        if (!Files.exists(filePath)) {
+            throw new ResourceNotFoundException(
+                    "Result file not found on server for assay id=" + assayId + " (path=" + uri + ")");
+        }
+
+        return new FileSystemResource(filePath);
     }
 }

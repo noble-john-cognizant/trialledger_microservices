@@ -98,4 +98,26 @@ export class ReportsComponent implements OnInit {
   meter(k: KPIResponseDTO) {
     return k.target ? Math.min(100, Math.round((k.currentValue / k.target) * 100)) : 0;
   }
+
+  fileName(uri: string): string {
+    if (!uri) return '';
+    return uri.split(/[/\\]/).pop() ?? uri;
+  }
+
+  downloadReport(reportId: number, filename: string) {
+    this.rApi.downloadReport(reportId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || `report-${reportId}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        this.toast.success('Download started');
+      },
+      error: e => this.toast.error(extractErrorMessage(e, 'Report file could not be downloaded.'))
+    });
+  }
 }

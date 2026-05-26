@@ -9,16 +9,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "KPI-SERVICE", path = "/api/kpis",
-        fallback = KPIClientFallback.class)
+@FeignClient(name = "KPI-SERVICE", path = "/api/kpis", fallback = KPIClientFallback.class)
 public interface KPIClient {
 
-    @PatchMapping("/{kpiId}/refresh")
-    void refreshKPIValue(@PathVariable("kpiId") Long kpiId,
-                         @RequestParam("studyId") Long studyId);
-
-    @GetMapping("/period/{period}")
-    List<KPIResponseDTO> getKPIsByPeriod(@PathVariable("period") String period);
+//    @PatchMapping("/{kpiId}/refresh")
+//    void refreshKPIValue(@PathVariable("kpiId") Long kpiId, @RequestParam("studyId") Long studyId);
+//
+//    @GetMapping("/period/{period}")
+//    List<KPIResponseDTO> getKPIsByPeriod(@PathVariable("period") String period);
 
     @PatchMapping("/refresh/study/{studyId}")
     void refreshAllKPIsForStudy(@PathVariable("studyId") Long studyId);

@@ -8,15 +8,15 @@ import java.util.List;
 
 @Component
 public class KPIClientFallback implements KPIClient {
-    @Override
-    public void refreshKPIValue(Long kpiId, Long studyId) {
-        // No-op
-    }
-
-    @Override
-    public List<KPIResponseDTO> getKPIsByPeriod(String period) {
-        return Collections.emptyList();
-    }
+//    @Override
+//    public void refreshKPIValue(Long kpiId, Long studyId) {
+//        // No-op
+//    }
+//
+//    @Override
+//    public List<KPIResponseDTO> getKPIsByPeriod(String period) {
+//        return Collections.emptyList();
+//    }
 
     @Override
     public void refreshAllKPIsForStudy(Long studyId) {

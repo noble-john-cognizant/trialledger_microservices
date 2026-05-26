@@ -40,6 +40,11 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
         Sample sample = sampleRepository.findById(sampleId)
                 .orElseThrow(() -> new SampleNotFoundException(sampleId));
 
+        if (requestDTO.getFromUser().trim().equalsIgnoreCase(requestDTO.getToUser().trim())) {
+            throw new IllegalArgumentException(
+                    "From user and To user must be different. Cannot transfer custody to the same person.");
+        }
+
         ChainOfCustody coc = ChainOfCustody.builder()
                 .sample(sample)
                 .fromUser(requestDTO.getFromUser())
@@ -113,7 +118,6 @@ public class ChainOfCustodyServiceImpl implements ChainOfCustodyService {
                 .stream()
                 .map(chainOfCustodyMapper::toResponseDTO)
                 .toList();
-
 
         return list;
     }

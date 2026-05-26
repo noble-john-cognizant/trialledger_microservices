@@ -1,6 +1,6 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidatorFn, Validators } from '@angular/forms';
 import { SampleService } from '../../core/services/sample.service';
 import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
@@ -28,7 +28,7 @@ import { SearchSelectComponent, SearchOption } from '../../shared/search-select/
   styleUrls: ['./samples.component.css']
 })
 export class SamplesComponent implements OnInit {
-  private api = inject(SampleService);
+  api = inject(SampleService);
   private partApi = inject(ParticipantService);
   private studyApi = inject(StudyService);
   private toast = inject(ToastService);
@@ -58,6 +58,7 @@ export class SamplesComponent implements OnInit {
   assays = signal<AssayRunResponseDTO[]>([]);
 
   canCreate = computed(() => this.auth.can('SAMPLE_CREATE'));
+  canUpdate = computed(() => this.auth.can('SAMPLE_UPDATE'));
   canCustody = computed(() => this.auth.can('CUSTODY_CREATE'));
   canStorage = computed(() => this.auth.can('STORAGE_CREATE'));
   canAssay = computed(() => this.auth.can('ASSAY_CREATE'));
@@ -79,6 +80,39 @@ export class SamplesComponent implements OnInit {
       subtitle: `${s.sponsor} · #${s.protocolNumber}`
     }))
   );
+
+  /** Validator: toUser must not equal fromUser (case-insensitive). */
+  private notSameUser(): ValidatorFn {
+    return (control: AbstractControl) => {
+      const from = this.transferForm?.controls.fromUser.value?.trim().toLowerCase();
+      const to = (control.value ?? '').trim().toLowerCase();
+      return from && to && from === to ? { sameUser: true } : null;
+    };
+  }
+
+  /** Extract just the filename from a full server file path for display. */
+  fileName(uri: string): string {
+    if (!uri) return '';
+    return uri.split(/[/\\]/).pop() ?? uri;
+  }
+
+  /** Trigger a browser file download for the given assay result. */
+  downloadResult(assayId: number, filename: string) {
+    this.api.downloadAssayResult(assayId).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename || `assay-${assayId}-result.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        this.toast.success('Download started');
+      },
+      error: e => this.toast.error(extractErrorMessage(e, 'Result file could not be downloaded.'))
+    });
+  }
 
   setParticipant(id: number | null) { this.form.patchValue({ participantId: id }); }
   setStudy(id: number | null)       { this.form.patchValue({ studyId: id }); }
@@ -102,10 +136,13 @@ export class SamplesComponent implements OnInit {
   });
 
   transferForm = this.fb.nonNullable.group({
-    fromUser: ['', Validators.required], toUser: ['', Validators.required],
-    fromLocation: ['', Validators.required], toLocation: ['', Validators.required],
+    fromUser: [{ value: '', disabled: true }],
+    toUser: ['', [Validators.required, Validators.minLength(2)]],
+    fromLocation: ['', Validators.required],
+    toLocation: ['', Validators.required],
     notes: ['']
   });
+
   storeForm = this.fb.nonNullable.group({
     freezerId: [1, Validators.required], shelf: ['', Validators.required],
     box: ['', Validators.required], position: ['', Validators.required]
@@ -136,9 +173,25 @@ export class SamplesComponent implements OnInit {
 
   submit() {
     if (this.form.invalid) return;
+    // Let the backend validate participant and study — errors shown via toast
     this.api.create(this.form.getRawValue() as any).subscribe({
       next: () => { this.toast.success('Sample logged'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+      error: e => this.toast.error(extractErrorMessage(e, 'Failed to log sample'))
+    });
+  }
+
+  updateStatus(s: SampleResponseDTO, status: string, selectEl: HTMLSelectElement) {
+    if (!status || status === s.status) return;
+    this.api.updateStatus(s.sampleId, status as SampleStatus).subscribe({
+      next: updated => {
+        this.toast.success('Status updated to ' + updated.status);
+        this.load();
+        if (this.selected()?.sampleId === s.sampleId) this.selected.set(updated);
+      },
+      error: e => {
+        selectEl.value = s.status;
+        this.toast.error(extractErrorMessage(e, 'Status update failed'));
+      }
     });
   }
 
@@ -151,12 +204,25 @@ export class SamplesComponent implements OnInit {
   }
 
   openTransfer() {
-    this.transferForm.reset({ fromUser: '', toUser: '', fromLocation: '', toLocation: '', notes: '' });
+    const currentUserName = this.auth.user()?.name ?? '';
+    this.transferForm.reset({ toUser: '', fromLocation: '', toLocation: '', notes: '' });
+    this.transferForm.controls.fromUser.setValue(currentUserName);
+    this.transferForm.controls.toUser.setValidators([
+      Validators.required,
+      Validators.minLength(2),
+      this.notSameUser()
+    ]);
+    this.transferForm.controls.toUser.updateValueAndValidity();
     this.transferOpen.set(true);
   }
+
   submitTransfer() {
     const s = this.selected(); if (!s) return;
-    this.api.addCustody({ sampleId: s.sampleId, ...this.transferForm.getRawValue() }).subscribe({
+    this.api.addCustody({
+      sampleId: s.sampleId,
+      ...this.transferForm.getRawValue(),
+      fromUser: this.transferForm.controls.fromUser.value
+    }).subscribe({
       next: () => {
         this.toast.success('Custody transferred'); this.transferOpen.set(false);
         this.api.custodyForSample(s.sampleId).subscribe(v => this.custody.set(v ?? []));

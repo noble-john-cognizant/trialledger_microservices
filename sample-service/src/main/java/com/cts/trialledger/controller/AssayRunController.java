@@ -3,9 +3,12 @@ package com.cts.trialledger.controller;
 import com.cts.trialledger.dto.AssayRunRequestDTO;
 import com.cts.trialledger.dto.AssayRunResponseDTO;
 import com.cts.trialledger.service.AssayRunService;
+import org.springframework.core.io.Resource;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-//import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -52,5 +55,16 @@ public class AssayRunController {
     @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','DATA_MANAGER')")
     public AssayRunResponseDTO getAssayRunById(@PathVariable Long assayId) {
         return assayRunService.getAssayRunById(assayId);
+    }
+
+    @GetMapping("/{assayId}/result")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','DATA_MANAGER')")
+    public ResponseEntity<Resource> downloadResult(@PathVariable Long assayId) {
+        Resource resource = assayRunService.downloadResult(assayId);
+        String filename = resource.getFilename() != null ? resource.getFilename() : "assay-result.json";
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(resource);
     }
 }

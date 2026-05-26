@@ -24,4 +24,7 @@ export class ReportService {
   create(dto: ReportRequestDTO): Observable<ReportResponseDTO> {
     return this.http.post<ReportResponseDTO>(this.base, dto);
   }
+  downloadReport(reportId: number): Observable<Blob> {
+      return this.http.get(`${this.base}/${reportId}/download`, { responseType: 'blob' });
+  }
 }

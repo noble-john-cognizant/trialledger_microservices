@@ -34,33 +34,37 @@
             </select>
           </div>
 
-          @if (reports().length === 0) {
-            <tl-empty icon="bi-bar-chart" title="No reports yet" description="Create a report to get started." />
-          } @else {
-            <ul class="list-unstyled mb-0">
-              @for (r of reports(); track r.reportId) {
-                <li class="report-item">
-                  <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div>
-                      <span class="fw-semibold">Report #{{ r.reportId }}</span>
-                      <span class="badge bg-soft-primary ms-2">{{ r.scope }}</span>
-                    </div>
-                    @if (r.reportUri) {
-                      <a [href]="r.reportUri" target="_blank" class="btn btn-sm btn-outline-primary">Open</a>
-                    }
-                  </div>
-                  <div class="small text-muted">Study {{ r.studyId }} · {{ r.generatedAt | date:'medium' }}</div>
-                  <details class="mt-2">
-                    <summary class="small text-muted">Metrics JSON</summary>
-                    <pre class="mono small mb-0 mt-2">{{ r.metricsJson | json }}</pre>
-                  </details>
-                </li>
+        @if (reports().length === 0) {
+        <tl-empty icon="bi-bar-chart" title="No reports yet" description="Create a report to get started." />
+        } @else {
+        <ul class="list-unstyled mb-0">
+          @for (r of reports(); track r.reportId) {
+          <li class="report-item">
+            <div class="d-flex justify-content-between align-items-center mb-1">
+              <div>
+                <span class="fw-semibold">Report #{{ r.reportId }}</span>
+                <span class="badge bg-soft-primary ms-2">{{ r.scope }}</span>
+              </div>
+              @if (r.reportUri) {
+              <button class="btn btn-sm btn-outline-primary"
+                      title="Download report"
+                      (click)="downloadReport(r.reportId, fileName(r.reportUri))">
+                <i class="bi bi-download me-1"></i> Download
+              </button>
               }
-            </ul>
+            </div>
+            <div class="small text-muted">Study {{ r.studyId }} · {{ r.generatedAt | date:'medium' }}</div>
+            <details class="mt-2">
+              <summary class="small text-muted">Metrics JSON</summary>
+              <pre class="mono small mb-0 mt-2">{{ r.metricsJson | json }}</pre>
+            </details>
+          </li>
           }
-        </div>
+        </ul>
+        }
       </div>
     </div>
+  </div>
   }
 
   @if (canViewKpis()) {

@@ -33,6 +33,11 @@ export class SampleService {
   create(dto: SampleRequestDTO): Observable<SampleResponseDTO> {
     return this.http.post<SampleResponseDTO>(this.base, dto);
   }
+  updateStatus(sampleId: number, status: SampleStatus): Observable<SampleResponseDTO> {
+    return this.http.patch<SampleResponseDTO>(`${this.base}/${sampleId}/status`, null, {
+      params: { status }
+    });
+  }
 
   // chain of custody
   custodyForSample(sampleId: number): Observable<ChainOfCustodyResponseDTO[]> {
@@ -52,6 +57,12 @@ export class SampleService {
   }
   createAssay(dto: AssayRunRequestDTO): Observable<AssayRunResponseDTO> {
     return this.http.post<AssayRunResponseDTO>(`${this.base}/assays`, dto);
+  }
+
+  downloadAssayResult(assayId: number): Observable<Blob> {
+    return this.http.get(`${this.base}/assays/${assayId}/result`, {
+      responseType: 'blob'
+    });
   }
 
   // storage

@@ -47,9 +47,13 @@ function pickMessage(body: any): string | null {
   }
   if (typeof body !== 'object') return null;
 
-  // Common single-field shapes from this project's backends
-  if (typeof body.error === 'string' && body.error)       return body.error;
+  // Common single-field shapes from this project's backends.
+  // Prefer `message` over `error` — our handlers put the descriptive text in
+  // `message` (e.g. "Study not found with id=60 | Participant not found with id=10")
+  // while `error` only contains the generic HTTP reason phrase ("Bad Request").
+  // If `message` is absent or empty, fall back to `error`.
   if (typeof body.message === 'string' && body.message)   return body.message;
+  if (typeof body.error === 'string' && body.error)       return body.error;
   if (typeof body.detail === 'string' && body.detail)     return body.detail;
 
   // Spring's validation errors[] list

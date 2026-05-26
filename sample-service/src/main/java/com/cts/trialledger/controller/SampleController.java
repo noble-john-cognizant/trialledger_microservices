@@ -65,6 +65,14 @@ public class SampleController {
         return sampleService.getAllSamples();
     }
 
+    @PatchMapping("/{sampleId}/status")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','COORDINATOR')")
+    public ResponseEntity<SampleResponseDTO> updateStatus(
+            @PathVariable Long sampleId,
+            @RequestParam SampleStatus status) {
+        return ResponseEntity.ok(sampleService.updateStatus(sampleId, status));
+    }
+
     @GetMapping("/{sampleId}/full")
     @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER')")
     public ResponseEntity<ApiResponseDTO> getSampleFull(@PathVariable Long sampleId) {
@@ -72,6 +80,7 @@ public class SampleController {
     }
 
     @GetMapping("/stats/{studyId}")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER')")
     public SampleStatsDTO getSampleStats(@PathVariable Long studyId) {
         log.info("[SampleController] getSampleStats() called | studyId={}", studyId);
 

@@ -22,4 +22,6 @@ public interface SampleService {
     List<SampleResponseDTO> getSamplesByStudy(Long studyId);
 
     ApiResponseDTO getSampleFull(Long sampleId);
+
+    SampleResponseDTO updateStatus(Long sampleId, SampleStatus status);
 }

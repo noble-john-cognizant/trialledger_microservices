@@ -20,6 +20,7 @@ public class SampleGlobalExceptionHandler {
         ErrorResponse response = new ErrorResponse(HttpStatus.FORBIDDEN.value(), "Access Denied", ex.getMessage(), LocalDateTime.now());
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(response);
     }
+
     @ExceptionHandler(SampleNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleSampleNotFound(SampleNotFoundException ex) {
         return buildErrorResponse(HttpStatus.NOT_FOUND, ex.getMessage());
