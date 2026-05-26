@@ -1,0 +1,99 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Audit log</h2>
+    <p class="text-muted mb-0">Immutable record of every action across the platform.</p>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <select class="form-select" style="max-width:200px" [(ngModel)]="mode" (change)="run()">
+      <option value="all">All entries</option>
+      <option value="action">By action</option>
+      <option value="user">By user ID</option>
+      <option value="range">By date range</option>
+    </select>
+
+    @if (mode() === 'action') {
+      <input class="form-control" style="max-width:240px" placeholder="e.g. LOGIN, CREATE_STUDY" [(ngModel)]="actionFilter">
+      <button class="btn btn-primary" (click)="run()">Search</button>
+    }
+    @if (mode() === 'user') {
+      <input type="number" class="form-control" style="max-width:200px" placeholder="User ID" [(ngModel)]="userIdFilter">
+      <button class="btn btn-primary" (click)="run()">Search</button>
+    }
+    @if (mode() === 'range') {
+      <input type="datetime-local" class="form-control" style="max-width:220px" [(ngModel)]="from">
+      <input type="datetime-local" class="form-control" style="max-width:220px" [(ngModel)]="to">
+      <button class="btn btn-primary" (click)="run()">Search</button>
+    }
+
+    <span class="ms-auto small text-muted">
+      Showing {{ pageItems().length }} of {{ all().length }} entries
+    </span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (all().length === 0) {
+      <div class="p-4">
+        <tl-empty icon="bi-clipboard-data" title="No audit entries" description="Adjust filters or perform an action to see logs." />
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr>
+              <th style="width:60px">ID</th><th>When</th><th>User</th><th>Action</th><th>Resource</th><th>Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (e of pageItems(); track e.auditId) {
+              <tr>
+                <td class="mono"><small class="text-muted">#{{ e.auditId }}</small></td>
+                <td><small class="text-muted">{{ e.timestamp | date:'medium' }}</small></td>
+                <td><span class="badge bg-soft-secondary">U{{ e.userId }}</span></td>
+                <td><span class="badge bg-soft-purple">{{ e.action }}</span></td>
+                <td><small class="mono">{{ e.resource }}</small></td>
+                <td>
+                  <details>
+                    <summary class="small text-muted">View JSON</summary>
+                    <pre class="mono small mb-0 mt-2">{{ e.details | json }}</pre>
+                  </details>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <nav class="d-flex justify-content-center py-3 border-top" aria-label="Audit pagination">
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" [class.disabled]="page() === 0">
+            <button class="page-link" (click)="go(0)" title="First">«</button>
+          </li>
+          <li class="page-item" [class.disabled]="page() === 0">
+            <button class="page-link" (click)="go(page() - 1)">‹ Prev</button>
+          </li>
+
+          @for (p of pageNumbers(); track p) {
+            <li class="page-item" [class.active]="p === page()">
+              <button class="page-link" (click)="go(p)">{{ p + 1 }}</button>
+            </li>
+          }
+
+          <li class="page-item" [class.disabled]="page() + 1 >= totalPages()">
+            <button class="page-link" (click)="go(page() + 1)">Next ›</button>
+          </li>
+          <li class="page-item" [class.disabled]="page() + 1 >= totalPages()">
+            <button class="page-link" (click)="go(totalPages() - 1)" title="Last">»</button>
+          </li>
+        </ul>
+      </nav>
+      <div class="text-center pb-3">
+        <small class="text-muted">Page {{ page() + 1 }} of {{ totalPages() }}</small>
+      </div>
+    }
+  </div>
+</div>

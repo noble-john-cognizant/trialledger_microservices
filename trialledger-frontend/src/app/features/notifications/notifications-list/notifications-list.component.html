@@ -1,0 +1,46 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Notifications</h2>
+    <p class="text-muted mb-0">Stay on top of consent, sample, visit and AE alerts.</p>
+  </div>
+  <button class="btn btn-outline-primary" (click)="markAll()" [disabled]="unreadCount() === 0">
+    <i class="bi bi-check2-all me-1"></i> Mark all as read
+  </button>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <button class="btn btn-sm chip" [class.chip-active]="categoryFilter() === ''"
+      (click)="categoryFilter.set('')">All</button>
+    @for (c of categories; track c) {
+      <button class="btn btn-sm chip" [class.chip-active]="categoryFilter() === c"
+        (click)="categoryFilter.set(c)">{{ c }}</button>
+    }
+    <span class="ms-auto small text-muted">{{ unreadCount() }} unread of {{ displayList().length }}</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (filtered().length === 0) {
+      <div class="p-4">
+        <tl-empty icon="bi-bell" title="All caught up" description="No notifications to show." />
+      </div>
+    } @else {
+      <ul class="list-group list-group-flush">
+        @for (n of filtered(); track n.notificationId) {
+          <li class="list-group-item notif-row" [class.unread]="n.status === 'UNREAD'">
+            <span class="badge me-2" [ngClass]="catBadge(n.category)">{{ n.category }}</span>
+            <div class="flex-grow-1 ms-2">
+              <div class="fw-semibold">{{ n.message }}</div>
+              <small class="text-muted">{{ n.createdAt | date:'medium' }} · Entity #{{ n.entityId }}</small>
+            </div>
+            @if (n.status === 'UNREAD') {
+              <button class="btn btn-sm btn-light" (click)="markRead(n)">Mark read</button>
+            }
+          </li>
+        }
+      </ul>
+    }
+  </div>
+</div>

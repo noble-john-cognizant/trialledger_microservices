@@ -1,0 +1,220 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Hi {{ user()?.name }} 👋</h2>
+    <p class="text-muted mb-0">Your enrollment, consents and upcoming visits at a glance.</p>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="skeleton mb-3" style="height: 140px"></div>
+  <div class="skeleton" style="height: 240px"></div>
+}
+
+@else if (lookupErr() && !participant()) {
+  <div class="card link-card mb-4">
+    <div class="card-body d-flex flex-wrap align-items-center gap-3">
+      <div class="link-icon"><i class="bi bi-exclamation-triangle"></i></div>
+      <div class="flex-grow-1">
+        <h5 class="fw-bold mb-1">We couldn't load your enrollment</h5>
+        <p class="text-muted mb-0">{{ lookupErr() }}</p>
+      </div>
+      <button class="btn btn-primary" (click)="retry()">
+        <i class="bi bi-arrow-clockwise me-1"></i> Try again
+      </button>
+    </div>
+  </div>
+}
+
+@else if (participant(); as p) {
+
+  <!-- ===== Hero ===== -->
+  <div class="card mb-4 hero-card">
+    <div class="card-body d-flex flex-wrap align-items-center gap-3">
+      <div class="hero-avatar">{{ initials(p.name) }}</div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+          <h4 class="mb-0 fw-bold">{{ p.name }}</h4>
+          <span class="badge bg-soft-primary">Participant #{{ p.participantId }}</span>
+        </div>
+        <div class="text-muted small">
+          <span class="me-3"><i class="bi bi-card-text"></i> {{ p.externalId }}</span>
+          <span class="me-3"><i class="bi bi-cake2"></i> {{ p.dob | date:'mediumDate' }}</span>
+          <span class="me-3"><i class="bi bi-telephone"></i> {{ p.contactInfo }}</span>
+        </div>
+        <div class="mt-2"><tl-status [value]="p.enrollmentStatus" /></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KPI strip ===== -->
+  <div class="row g-3 mb-4">
+    @if (canViewConsent()) {
+      <div class="col-md-4">
+        <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon text-bg-primary"><i class="bi bi-pen"></i></div>
+          <div>
+            <div class="text-muted small text-uppercase fw-semibold">My consent</div>
+            <div class="fs-4 fw-bold">{{ consents().length }}</div>
+            <div class="small text-muted">
+              @if (activeConsent()) { Active v{{ activeConsent()!.versionNumber }} }
+              @else { No active record }
+            </div>
+          </div>
+        </div></div>
+      </div>
+    }
+    @if (canViewVisits()) {
+      <div class="col-md-4">
+        <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+          <div class="stat-icon text-bg-success"><i class="bi bi-calendar-event"></i></div>
+          <div>
+            <div class="text-muted small text-uppercase fw-semibold">My visits</div>
+            <div class="fs-4 fw-bold">{{ visits().length }}</div>
+            <div class="small text-muted">{{ upcomingVisits().length }} upcoming</div>
+          </div>
+        </div></div>
+      </div>
+    }
+    <div class="col-md-4">
+      <div class="card stat-card"><div class="card-body d-flex align-items-center gap-3">
+        <div class="stat-icon text-bg-warning"><i class="bi bi-journal-bookmark"></i></div>
+        <div>
+          <div class="text-muted small text-uppercase fw-semibold">My study</div>
+          <div class="fs-4 fw-bold">#{{ p.studyId }}</div>
+          <div class="small text-muted">
+            @if (study()) { {{ study()!.title }} }
+            @else { ID only }
+          </div>
+        </div>
+      </div></div>
+    </div>
+  </div>
+
+  <!-- ===== Study you're enrolled in ===== -->
+  <div class="card mb-4 study-card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+      <h6 class="fw-bold mb-0"><i class="bi bi-journal-bookmark me-1"></i> Study you're enrolled in</h6>
+      <span class="badge bg-soft-primary">#{{ p.studyId }}</span>
+    </div>
+    <div class="card-body">
+      @if (canViewStudy()) {
+        @if (study(); as s) {
+          <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+            <h4 class="mb-0 fw-bold">{{ s.title }}</h4>
+            <tl-status [value]="s.status" />
+          </div>
+          <dl class="row mb-0 study-meta">
+            <dt class="col-sm-4 text-muted small">Sponsor</dt>
+            <dd class="col-sm-8">{{ s.sponsor }}</dd>
+
+            <dt class="col-sm-4 text-muted small">Protocol number</dt>
+            <dd class="col-sm-8"><span class="mono">#{{ s.protocolNumber }}</span></dd>
+
+            <dt class="col-sm-4 text-muted small">Start date</dt>
+            <dd class="col-sm-8">{{ s.startDate | date:'mediumDate' }}</dd>
+
+            <dt class="col-sm-4 text-muted small">End date</dt>
+            <dd class="col-sm-8">{{ s.endDate | date:'mediumDate' }}</dd>
+
+            @if (canViewProtocols() && activeProtocol(); as ap) {
+              <dt class="col-sm-4 text-muted small">Active protocol</dt>
+              <dd class="col-sm-8">
+                <span class="badge bg-soft-success">v{{ ap.versionNumber }}</span>
+                <small class="text-muted ms-2">effective {{ ap.effectiveDate | date:'mediumDate' }}</small>
+              </dd>
+            }
+          </dl>
+        } @else {
+          <div class="text-muted small">
+            <i class="bi bi-info-circle me-1"></i>
+            Study #{{ p.studyId }} details couldn't be loaded.
+          </div>
+        }
+      } @else {
+        <div class="alert alert-light border mb-0 d-flex align-items-start gap-2">
+          <i class="bi bi-info-circle text-primary"></i>
+          <div class="small">
+            <strong>You are enrolled in study #{{ p.studyId }}.</strong><br>
+            Detailed study information is only visible to research staff.
+            Your study coordinator can answer questions about the protocol.
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ===== Consent records ===== -->
+  @if (canViewConsent()) {
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-pen me-1"></i> My consent records</h6>
+        <a [routerLink]="['/consents']" [queryParams]="{ participantId: p.participantId }" class="small">View all →</a>
+      </div>
+      <div class="card-body p-0">
+        @if (consents().length === 0) {
+          <div class="p-4">
+            <tl-empty icon="bi-pen" title="No consent recorded"
+              description="Once you sign your consent it will appear here." />
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+              <thead>
+                <tr><th>Consent ID</th><th>Protocol</th><th>Version</th><th>Method</th><th>Signed</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                @for (c of consents(); track c.consentId) {
+                  <tr>
+                    <td><span class="badge bg-soft-primary">#{{ c.consentId }}</span></td>
+                    <td><span class="badge bg-soft-secondary">#{{ c.protocolId }}</span></td>
+                    <td><small>v{{ c.versionNumber }}</small></td>
+                    <td><span class="badge bg-soft-secondary">{{ c.consentMethod }}</span></td>
+                    <td><small class="text-muted">{{ c.consentDate | date:'medium' }}</small></td>
+                    <td><tl-status [value]="c.status" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ===== Visits ===== -->
+  @if (canViewVisits()) {
+    <div class="card mb-4">
+      <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-calendar-event me-1"></i> My visits</h6>
+        <a [routerLink]="['/visits']" [queryParams]="{ participantId: p.participantId }" class="small">View all →</a>
+      </div>
+      <div class="card-body p-0">
+        @if (visits().length === 0) {
+          <div class="p-4">
+            <tl-empty icon="bi-calendar-event" title="No visits scheduled"
+              description="Your coordinator will schedule visits for you." />
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+              <thead>
+                <tr><th>Visit ID</th><th>Type</th><th>Scheduled</th><th>Performed</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                @for (v of visits(); track v.visitId) {
+                  <tr>
+                    <td><span class="badge bg-soft-primary">#{{ v.visitId }}</span></td>
+                    <td><span class="badge bg-soft-secondary">{{ v.visitType }}</span></td>
+                    <td><small class="text-muted">{{ v.scheduledAt | date:'medium' }}</small></td>
+                    <td><small class="text-muted">{{ v.performedAt | date:'medium' }}</small></td>
+                    <td><tl-status [value]="v.status" /></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  }
+}

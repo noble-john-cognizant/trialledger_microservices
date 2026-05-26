@@ -1,0 +1,20 @@
+{
+  "reportId" : 6,
+  "studyId" : 1,
+  "scope" : "SAMPLES",
+  "reportingPeriod" : "May 2026",
+  "parametersJson" : "{ \\\"fromDate\\\": \\\"2026-01-01\\\", \\\"toDate\\\": \\\"2026-05-18\\\" }",
+  "generatedAt" : "2026-05-26T10:34:43.646204800",
+  "metrics" : {
+    "samples" : {
+      "custodyEvents" : 1,
+      "assayRuns" : 1,
+      "total" : 4,
+      "byStatus" : {
+        "COMPLETED" : 2,
+        "IN_ANALYSIS" : 1,
+        "COLLECTED" : 1
+      }
+    }
+  }
+}

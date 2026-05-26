@@ -1,0 +1,15 @@
+{
+  "reportId" : 5,
+  "studyId" : 2,
+  "scope" : "ENROLLMENT",
+  "reportingPeriod" : "May 2026",
+  "parametersJson" : "{\n  \"studyId\": 6,\n  \"scope\": \"SAMPLES\",\n  \"parametersJson\": \"{ \\\"fromDate\\\": \\\"2026-01-01\\\", \\\"toDate\\\": \\\"2026-05-18\\\" }\",\n  \"reportingPeriod\": \"Q2-2026\"\n}",
+  "generatedAt" : "2026-05-26T09:55:14.571627800",
+  "metrics" : {
+    "participants" : {
+      "withdrawn" : 0,
+      "enrolled" : 0,
+      "total" : 0
+    }
+  }
+}

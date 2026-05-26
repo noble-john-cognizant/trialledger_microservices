@@ -1,0 +1,222 @@
+@if (isParticipant()) {
+  <tl-participant-home />
+} @else {
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Welcome back, {{ user()?.name }} <span>👋</span></h2>
+    <p class="text-muted mb-0">Here's what's happening across your studies today.</p>
+  </div>
+  <div class="d-flex gap-2">
+    @if (canStudies()) {
+      <a routerLink="/studies" class="btn btn-outline-primary">
+        <i class="bi bi-journal-bookmark me-1"></i> View studies
+      </a>
+    }
+    @if (canReports()) {
+      <a routerLink="/reports" class="btn btn-primary">
+        <i class="bi bi-bar-chart me-1"></i> Reports
+      </a>
+    }
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  @if (canStudies()) {
+    <div class="col-md-6 col-xl-3">
+      <div class="card kpi-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="kpi-icon text-bg-primary"><i class="bi bi-journal-bookmark"></i></div>
+          <div>
+            <div class="text-uppercase text-muted small fw-semibold">Active studies</div>
+            <div class="kpi-value">{{ activeStudies() }}</div>
+            <div class="text-muted small">of {{ studies().length }} total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  @if (canParticipants()) {
+    <div class="col-md-6 col-xl-3">
+      <div class="card kpi-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="kpi-icon text-bg-success"><i class="bi bi-people"></i></div>
+          <div>
+            <div class="text-uppercase text-muted small fw-semibold">Enrolled</div>
+            <div class="kpi-value">{{ enrolledCount() }}</div>
+            <div class="text-muted small">{{ participants().length }} total</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  @if (canSamples()) {
+    <div class="col-md-6 col-xl-3">
+      <div class="card kpi-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="kpi-icon text-bg-warning"><i class="bi bi-droplet"></i></div>
+          <div>
+            <div class="text-uppercase text-muted small fw-semibold">Samples in analysis</div>
+            <div class="kpi-value">{{ inAnalysisSamples() }}</div>
+            <div class="text-muted small">{{ samples().length }} tracked</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  @if (canAEs()) {
+    <div class="col-md-6 col-xl-3">
+      <div class="card kpi-card">
+        <div class="card-body d-flex align-items-center gap-3">
+          <div class="kpi-icon text-bg-danger"><i class="bi bi-exclamation-triangle"></i></div>
+          <div>
+            <div class="text-uppercase text-muted small fw-semibold">Open AEs</div>
+            <div class="kpi-value">{{ openAEs() }}</div>
+            <div class="text-muted small">{{ adverseEvents().length }} all-time</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<div class="row g-3">
+  @if (canStudies()) {
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+          <div>
+            <h6 class="mb-0 fw-bold">Recent studies</h6>
+            <small class="text-muted">Most recently created</small>
+          </div>
+          <a routerLink="/studies" class="small">View all →</a>
+        </div>
+        <div class="card-body p-0">
+          @if (studies().length === 0) {
+            <div class="p-4 text-muted">No studies yet.</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead><tr><th>Title</th><th>Sponsor</th><th>Status</th></tr></thead>
+                <tbody>
+                  @for (s of recentStudies(); track s.studyId) {
+                    <tr>
+                      <td>
+                        <div class="fw-semibold">{{ s.title }}</div>
+                        <small class="text-muted">#{{ s.protocolNumber }}</small>
+                      </td>
+                      <td>{{ s.sponsor }}</td>
+                      <td><tl-status [value]="s.status" /></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (canAEs()) {
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+          <div>
+            <h6 class="mb-0 fw-bold">Recent adverse events</h6>
+            <small class="text-muted">Most recently reported</small>
+          </div>
+          <a routerLink="/adverse-events" class="small">View all →</a>
+        </div>
+        <div class="card-body p-0">
+          @if (adverseEvents().length === 0) {
+            <div class="p-4 text-muted">No adverse events recorded.</div>
+          } @else {
+            <div class="table-responsive">
+              <table class="table table-hover mb-0">
+                <thead><tr><th>Description</th><th>Severity</th><th>Status</th><th>When</th></tr></thead>
+                <tbody>
+                  @for (ae of recentAEs(); track ae.aeId) {
+                    <tr>
+                      <td><span class="truncate">{{ ae.description }}</span></td>
+                      <td><tl-status [value]="ae.severity" /></td>
+                      <td><tl-status [value]="ae.status" /></td>
+                      <td><small class="text-muted">{{ ae.reportedAt | date:'mediumDate' }}</small></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  @if (canKpis()) {
+    <div class="col-lg-6">
+      <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white">
+          <div>
+            <h6 class="mb-0 fw-bold">KPIs</h6>
+            <small class="text-muted">Live metric targets</small>
+          </div>
+          @if (canReports()) { <a routerLink="/reports" class="small">Manage →</a> }
+        </div>
+        <div class="card-body">
+          @if (kpis().length === 0) {
+            <div class="text-muted">No KPIs configured.</div>
+          } @else {
+            @for (k of kpis().slice(0, 4); track k.kpiId) {
+              <div class="kpi-row">
+                <div>
+                  <div class="fw-semibold">{{ k.name }}</div>
+                  <div class="text-muted small">{{ k.definition }}</div>
+                </div>
+                <div class="text-end">
+                  <div class="kpi-value-sm">
+                    {{ k.currentValue }}<span class="text-muted small">/{{ k.target }}</span>
+                  </div>
+                  <div class="progress" style="width:140px;height:6px">
+                    <div class="progress-bar bg-primary" [style.width.%]="meter(k)"></div>
+                  </div>
+                </div>
+              </div>
+            }
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center bg-white">
+        <div>
+          <h6 class="mb-0 fw-bold">Recent notifications</h6>
+          <small class="text-muted">Latest alerts for you</small>
+        </div>
+        <a routerLink="/notifications" class="small">View all →</a>
+      </div>
+      <div class="card-body p-0">
+        @if (notifs().length === 0) {
+          <div class="p-4 text-muted">All caught up.</div>
+        } @else {
+          <ul class="list-group list-group-flush">
+            @for (n of recentNotifs(); track n.notificationId) {
+              <li class="list-group-item d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center gap-2">
+                  <span class="badge bg-soft-primary">{{ n.category }}</span>
+                  <span>{{ n.message }}</span>
+                </div>
+                <small class="text-muted">{{ n.createdAt | date:'short' }}</small>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+} <!-- /isParticipant else -->

@@ -1,0 +1,19 @@
+.report-item {
+  padding: .85rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  margin-bottom: .65rem;
+}
+.report-item:last-child { margin-bottom: 0; }
+
+.kpi-tile {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .85rem;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: .5rem;
+  margin-bottom: .65rem;
+}
+.kpi-tile:last-child { margin-bottom: 0; }
+pre { white-space: pre-wrap; word-break: break-all; }

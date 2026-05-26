@@ -1,0 +1,220 @@
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
+  <div>
+    <h2 class="fw-bold mb-1">Visits</h2>
+    <p class="text-muted mb-0">Schedule visits and capture source data.</p>
+  </div>
+  @if (canSchedule()) {
+    <button class="btn btn-primary" (click)="openSchedule()">
+      <i class="bi bi-calendar-plus me-1"></i> Schedule visit
+    </button>
+  }
+</div>
+
+<div class="card mb-3">
+  <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+    <select class="form-select" style="max-width:200px" (change)="scope.set($any($event.target).value)">
+      <option value="participant">By participant</option>
+      <option value="study">By study</option>
+    </select>
+    @if (scope() === 'participant') {
+      <div style="min-width:280px; max-width:380px; flex:1">
+        <tl-search-select
+          [items]="participantOptions()"
+          [value]="participantId()"
+          [canList]="canListParticipants()"
+          [placeholder]="'Search participant…'"
+          [idPlaceholder]="'Enter participant ID'"
+          (valueChange)="participantId.set($event)" />
+      </div>
+    } @else {
+      <div style="min-width:280px; max-width:380px; flex:1">
+        <tl-search-select
+          [items]="studyOptions()"
+          [value]="studyId()"
+          [canList]="canListStudy()"
+          [placeholder]="'Search study…'"
+          [idPlaceholder]="'Enter study ID'"
+          (valueChange)="studyId.set($event)" />
+      </div>
+    }
+    <button class="btn btn-outline-primary" (click)="load()">Load</button>
+    <span class="ms-auto small text-muted">{{ list().length }} visits</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body p-0">
+    @if (list().length === 0) {
+      <div class="p-4">
+        <tl-empty icon="bi-calendar-event" title="No visits loaded"
+          description="Choose a participant or study to load visits." />
+      </div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead>
+            <tr><th>Visit ID</th><th>Type</th><th>Participant</th><th>Study</th><th>Scheduled</th><th>Performed</th><th>Status</th><th class="text-end">Actions</th></tr>
+          </thead>
+          <tbody>
+            @for (v of list(); track v.visitId) {
+              <tr>
+                <td><span class="badge bg-soft-primary">#{{ v.visitId }}</span></td>
+                <td><span class="badge bg-soft-secondary">{{ v.visitType }}</span></td>
+                <td>
+                  <span class="badge bg-soft-secondary me-1">#{{ v.participantId }}</span>
+                  <small>{{ participantName(v.participantId) }}</small>
+                </td>
+                <td><small class="text-muted">#{{ v.studyId }}</small></td>
+                <td><small class="text-muted">{{ v.scheduledAt | date:'medium' }}</small></td>
+                <td><small class="text-muted">{{ v.performedAt | date:'medium' }}</small></td>
+                <td><tl-status [value]="v.status" /></td>
+                <td class="text-end">
+                  @if (canViewSource()) {
+                    <button class="btn btn-sm btn-light me-1" (click)="openSource(v)">
+                      <i class="bi bi-file-earmark-text"></i> Source data
+                    </button>
+                  }
+                  @if (canUpdate()) {
+                    <button class="btn btn-sm btn-light me-1" (click)="openStatus(v)" title="Update status">
+                      <i class="bi bi-pencil-square me-1"></i> Status
+                    </button>
+                  }
+                  @if (canDelete()) {
+                    <button class="btn btn-sm btn-outline-danger" (click)="del(v)">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </div>
+</div>
+
+<tl-modal [open]="schedOpen()" title="Schedule visit" (close)="schedOpen.set(false)">
+  <form [formGroup]="form" class="row g-3">
+    <div class="col-md-6">
+      <label class="form-label">Participant</label>
+      <tl-search-select
+        [items]="participantOptions()"
+        [value]="form.controls.participantId.value"
+        [canList]="canListParticipants()"
+        [idPlaceholder]="'Enter participant ID'"
+        (valueChange)="setParticipant($event)" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Study</label>
+      <tl-search-select
+        [items]="studyOptions()"
+        [value]="form.controls.studyId.value"
+        [canList]="canListStudy()"
+        [idPlaceholder]="'Enter study ID'"
+        (valueChange)="setStudy($event)" />
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Visit type</label>
+      <select class="form-select" formControlName="visitType">
+        @for (t of types; track t) { <option [value]="t">{{ t }}</option> }
+      </select>
+    </div>
+    <div class="col-md-6">
+      <label class="form-label">Scheduled at</label>
+      <input type="datetime-local" class="form-control" formControlName="scheduledAt">
+    </div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="schedOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">Schedule</button>
+  </div>
+</tl-modal>
+
+<tl-modal [open]="sourceOpen()" size="lg"
+  [title]="'Source data for visit #' + (visit()?.visitId ?? '')" (close)="sourceOpen.set(false)">
+  @if (visit()) {
+    @if (canCapture()) {
+      <div class="mb-3">
+        <button class="btn btn-primary" (click)="captureOpen.set(true)">
+          <i class="bi bi-plus-lg me-1"></i> Capture data
+        </button>
+      </div>
+    }
+    @if (sourceData().length === 0) {
+      <div class="text-muted">No source data captured for this visit.</div>
+    } @else {
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead><tr><th>ID</th><th>Type</th><th>URI</th><th>Hash</th><th>Collected</th><th>Action</th></tr></thead>
+          <tbody>
+            @for (sd of sourceData(); track sd.sourceId) {
+              <tr>
+                <td class="mono">#{{ sd.sourceId }}</td>
+                <td><span class="badge bg-soft-primary">{{ sd.dataType }}</span></td>
+                <td><a [href]="sd.dataUri" target="_blank" class="mono small truncate">{{ sd.dataUri }}</a></td>
+                <td><small class="mono truncate">{{ sd.hash }}</small></td>
+                <td><small class="text-muted">{{ sd.collectedAt | date:'short' }}</small></td>
+                <td>
+                  @if (canVerify()) {
+                    <button class="btn btn-sm btn-light" (click)="verify(sd)">
+                      <i class="bi bi-shield-check"></i>
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+</tl-modal>
+
+<tl-modal [open]="captureOpen()" title="Capture source data" (close)="captureOpen.set(false)">
+  <form [formGroup]="sourceForm" class="row g-3">
+    <div class="col-md-6"><label class="form-label">Data type</label><input class="form-control" formControlName="dataType" placeholder="e.g. ECG, BloodPressure"></div>
+    <div class="col-md-6"><label class="form-label">Collected at</label><input type="datetime-local" class="form-control" formControlName="collectedAt"></div>
+    <div class="col-12"><label class="form-label">Data URI</label><input class="form-control" formControlName="dataUri" placeholder="https://..."></div>
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="captureOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary" [disabled]="sourceForm.invalid" (click)="submitSource()">Save</button>
+  </div>
+</tl-modal>
+
+<!-- Update visit status. performedAt is shown only when the new status is COMPLETED. -->
+<tl-modal [open]="statusOpen()"
+  [title]="'Update status for visit #' + (pendingVisit()?.visitId ?? '')"
+  (close)="statusOpen.set(false)">
+  <form [formGroup]="statusForm" class="row g-3">
+    <div class="col-12">
+      <label class="form-label">New status</label>
+      <select class="form-select" formControlName="status">
+        <option value="">Select…</option>
+        @for (s of statuses; track s) { <option [value]="s">{{ s }}</option> }
+      </select>
+    </div>
+    @if (statusForm.controls.status.value === 'COMPLETED') {
+      <div class="col-12">
+        <label class="form-label">Performed at <span class="text-danger">*</span></label>
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-calendar-check"></i></span>
+          <input type="datetime-local" class="form-control" formControlName="performedAt">
+        </div>
+        <small class="form-text text-muted">
+          The date &amp; time the participant actually attended this visit. Defaults to now.
+        </small>
+      </div>
+    }
+  </form>
+  <div modalFooter>
+    <button class="btn btn-light" (click)="statusOpen.set(false)">Cancel</button>
+    <button class="btn btn-primary"
+            [disabled]="!statusForm.controls.status.value
+                       || (statusForm.controls.status.value === 'COMPLETED' && !statusForm.controls.performedAt.value)"
+            (click)="submitStatus()">
+      Save
+    </button>
+  </div>
+</tl-modal>

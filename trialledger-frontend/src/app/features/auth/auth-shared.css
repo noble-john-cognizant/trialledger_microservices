@@ -1,0 +1,102 @@
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  background: var(--tl-bg);
+}
+@media (max-width: 991.98px) {
+  .auth-shell { grid-template-columns: 1fr; }
+}
+
+.auth-hero {
+  background: var(--tl-hero-gradient);
+  color: #fff;
+  padding: 4rem 3.5rem;
+  position: relative;
+  overflow: hidden;
+}
+.auth-hero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 80% 0%, rgba(255,255,255,.18), transparent 55%),
+    radial-gradient(circle at 0% 100%, rgba(0,0,0,.25), transparent 50%);
+  pointer-events: none;
+}
+.auth-hero > * { position: relative; }
+.auth-hero h1, .auth-hero p, .auth-hero .opacity-75 { color: #fff; }
+
+.brand-logo {
+  width: 40px; height: 40px;
+  background: #fff;
+  color: var(--tl-primary-dark);
+  border-radius: 10px;
+  display: grid; place-items: center;
+  font-weight: 800;
+}
+
+.feature-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+}
+.feature {
+  background: rgba(255, 255, 255, .08);
+  border: 1px solid rgba(255, 255, 255, .15);
+  padding: 1rem 1.1rem; border-radius: 12px;
+  display: flex; align-items: flex-start; gap: .75rem;
+  backdrop-filter: blur(6px);
+}
+.feature i { font-size: 1.4rem; opacity: .9; }
+
+.auth-form {
+  display: flex; align-items: center; justify-content: center;
+  padding: 2.5rem 1.5rem;
+  background: var(--tl-bg);
+}
+.auth-card {
+  width: 100%;
+  max-width: 460px;
+}
+.auth-card h2, .auth-card label, .auth-card .form-text { color: var(--tl-text); }
+
+/* ===== OTP step indicator ===== */
+.auth-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.auth-steps li {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  padding: .5rem 0;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: .95rem;
+}
+.auth-steps li.active { color: #fff; font-weight: 600; }
+.auth-steps li.done   { color: rgba(255, 255, 255, 0.9); }
+.auth-steps .dot {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: grid; place-items: center;
+  font-weight: 700; font-size: .85rem;
+}
+.auth-steps li.active .dot {
+  background: #fff; color: var(--tl-primary-dark);
+  border-color: #fff;
+}
+.auth-steps li.done .dot {
+  background: var(--tl-accent);
+  color: #fff;
+}
+
+/* ===== OTP input styling ===== */
+.otp-input {
+  letter-spacing: .35em;
+  font-size: 1.1rem;
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  text-align: center;
+  font-weight: 600;
+}
