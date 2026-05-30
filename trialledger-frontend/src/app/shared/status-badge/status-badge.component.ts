@@ -31,8 +31,8 @@ const COLOR_MAP: Record<string, string> = {
   selector: 'tl-status',
   standalone: true,
   imports: [CommonModule],
-  templateUrl: './status-badge.component.html',
-  styleUrls: ['./status-badge.component.css']
+  template: `<span class="badge rounded-pill" [ngClass]="color">{{ label }}</span> `,
+  styles: `.badge { font-weight: 600; padding: .35em .7em; letter-spacing: .02em; }`
 })
 export class StatusBadgeComponent {
   @Input() value: string | null | undefined = '';

@@ -28,7 +28,7 @@
       </form>
     } @else {
       @if (loading()) {
-        <div class="skeleton" style="height: 180px"></div>
+        <tl-spinner block label="Loading profile…" />
       } @else {
         <dl class="row mb-0">
           <dt class="col-sm-4 text-muted">User ID</dt>

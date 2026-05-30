@@ -31,7 +31,7 @@ public class ProtocolController {
     }
 
     @GetMapping("/{studyId}/protocols")
-    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','COORDINATOR','PARTICIPANT')")
     public ResponseEntity<List<ProtocolVersionResponseDto>> getProtocols(@PathVariable Long studyId) {
         return ResponseEntity.ok(protocolService.getProtocolByStudy(studyId));
     }
@@ -43,7 +43,7 @@ public class ProtocolController {
     }
 
     @GetMapping("/protocols/{protocolId}")
-    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','COORDINATOR','PARTICIPANT')")
     public ResponseEntity<ProtocolVersionResponseDto> getProtocolById(@PathVariable Long protocolId) {
         return ResponseEntity.ok(protocolService.getProtocolById(protocolId));
     }

@@ -8,14 +8,13 @@ import { extractErrorMessage } from '../../../core/utils/error-message';
 import { Role, UserDTO, ALL_ROLES } from '../../../core/models/user.models';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../../shared/empty-state/empty-state.component';
+import { SpinnerComponent } from '../../../shared/spinner/spinner.component';
 
 @Component({
   selector: 'tl-users-list',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, StatusBadgeComponent, ModalComponent, EmptyStateComponent],
-  templateUrl: './users-list.component.html',
-  styleUrls: ['./users-list.component.css']
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, StatusBadgeComponent, ModalComponent, SpinnerComponent],
+  templateUrl: './users-list.component.html'
 })
 export class UsersListComponent implements OnInit {
   private api = inject(UserService);
@@ -27,6 +26,8 @@ export class UsersListComponent implements OnInit {
   users = signal<UserDTO[]>([]);
   search = signal('');
   roleFilter = signal<string>('');
+  loading = signal(true);
+  error = signal<string | null>(null);
 
   canRegister = computed(() => this.auth.can('USER_REGISTER'));
   canUpdate = computed(() => this.auth.can('USER_UPDATE'));
@@ -61,9 +62,11 @@ export class UsersListComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
+    this.loading.set(true);
+    this.error.set(null);
     this.api.list().subscribe({
-      next: u => this.users.set(u ?? []),
-      error: () => this.toast.error('Failed to load users')
+      next: u => { this.users.set(u ?? []); this.loading.set(false); },
+      error: e => { this.error.set(extractErrorMessage(e, 'Could not load users.')); this.loading.set(false); }
     });
   }
 
@@ -79,8 +82,7 @@ export class UsersListComponent implements OnInit {
     if (this.createForm.invalid) return;
     const { role, ...dto } = this.createForm.getRawValue();
     this.api.registerByAdmin(role, dto).subscribe({
-      next: () => { this.toast.success('User created'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Create failed'))
+      next: () => { this.toast.success('User created'); this.createOpen.set(false); this.load(); }
     });
   }
 
@@ -94,16 +96,14 @@ export class UsersListComponent implements OnInit {
     const u = this.editing();
     if (!u || this.editForm.invalid) return;
     this.api.update(u.userId, this.editForm.getRawValue()).subscribe({
-      next: () => { this.toast.success('Updated'); this.editOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Update failed'))
+      next: () => { this.toast.success('Updated'); this.editOpen.set(false); this.load(); }
     });
   }
 
   toggleStatus(u: UserDTO) {
     const next = u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
     this.api.updateStatus(u.userId, next).subscribe({
-      next: () => { this.toast.success(`User ${next.toLowerCase()}`); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Status change failed'))
+      next: () => { this.toast.success(`User ${next.toLowerCase()}`); this.load(); }
     });
   }
 }

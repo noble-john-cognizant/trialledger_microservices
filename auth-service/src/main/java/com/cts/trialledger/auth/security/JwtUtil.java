@@ -15,7 +15,7 @@ import java.util.Map;
 public class JwtUtil {
 
     private final static String SECRET = "fkjsad3433545jkfKJFDFSN745$%^fdw";
-    public final static Integer EXPIRATION_TIME = 15 * 60;
+    public final static Integer EXPIRATION_TIME = 60 * 60;
 
     public String generateToken(Long userId, String name, String email, String role) {
         Map<String, String> payload = new HashMap<>();

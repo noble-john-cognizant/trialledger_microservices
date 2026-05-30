@@ -18,9 +18,6 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-
-
-
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -40,24 +37,9 @@ public class SecurityConfig {
         return security.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(req ->
-//
                                 req.requestMatchers("/api/audit/**").hasAnyRole("ADMIN", "AUDITOR", "COMPLIANCE")
                                 .requestMatchers("/api/auth/**").permitAll()
-//                                .requestMatchers("/api/studies/**").hasAnyRole(ADMIN.name(), PI.name(), COORDINATOR.name(), COMPLIANCE.name(), DATA_MANAGER.name(), AUDITOR.name())
-//                                .requestMatchers("/api/participants/**", "/api/consents/**").hasAnyRole(ADMIN.name(), PI.name(), COORDINATOR.name(), COMPLIANCE.name(), DATA_MANAGER.name(), AUDITOR.name(), PARTICIPANT.name())
-//                                .requestMatchers("/api/samples/**").hasAnyRole(ADMIN.name(), PI.name(), COORDINATOR.name(), COMPLIANCE.name(), DATA_MANAGER.name(), AUDITOR.name(), TECHNICIAN.name())
-//                                .requestMatchers("/api/sourcedata/**", "/api/visits/**").hasAnyRole(ADMIN.name(), PI.name(), COORDINATOR.name(), COMPLIANCE.name(), DATA_MANAGER.name(), PARTICIPANT.name(), TECHNICIAN.name())
-//                                .requestMatchers("/api/adverse-events/**").hasAnyRole(ADMIN.name(), PI.name(), COORDINATOR.name(), COMPLIANCE.name(), DATA_MANAGER.name(), AUDITOR.name(), TECHNICIAN.name())
-//                                .requestMatchers("/api/provenance",
-//                                        "/api/provenance/**",
-//                                        "/api/audit-packages",
-//                                        "/api/audit-packages/**",
-//                                        "/api/dataset-snapshot",
-//                                        "/api/dataset-snapshot/**")
-//                                .hasAnyRole(ADMIN.name(), PI.name(), COMPLIANCE.name(), DATA_MANAGER.name(), AUDITOR.name())
-//                                .requestMatchers("/api/reports/**", "/api/kpis/**").hasAnyRole(ADMIN.name(), PI.name(), COORDINATOR.name(), COMPLIANCE.name(), DATA_MANAGER.name(), AUDITOR.name())
-//                                .requestMatchers("/api/alerts/**").hasAnyRole(ADMIN.name(), COMPLIANCE.name())
-                                .anyRequest().authenticated()
+                             .anyRequest().authenticated()
                 )
                 .httpBasic(Customizer.withDefaults())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)

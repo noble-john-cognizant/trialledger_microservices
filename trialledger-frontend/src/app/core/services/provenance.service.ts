@@ -18,9 +18,9 @@ export class ProvenanceService {
       params: new HttpParams().set('pageNumber', pageNumber).set('pageSize', pageSize)
     });
   }
-  create(dto: ProvenanceRequestDTO): Observable<string> {
-    return this.http.post(`${this.base}/api/provenance`, dto, { responseType: 'text' });
-  }
+  // create(dto: ProvenanceRequestDTO): Observable<string> {
+  //   return this.http.post(`${this.base}/api/provenance`, dto, { responseType: 'text' });
+  // }
 
   // snapshots
   snapshots(studyId: number): Observable<DatasetSnapshot[]> {

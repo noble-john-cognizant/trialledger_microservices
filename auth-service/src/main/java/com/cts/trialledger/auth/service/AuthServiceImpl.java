@@ -42,7 +42,7 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public LoginResponseDTO login(LoginDTO loginDTO) {
         User user = authRepo.findByEmail(loginDTO.email()).orElseThrow(() -> new UserNotFoundException(loginDTO.email() + " not found."));
-
+        if(user.getStatus().equals(Status.INACTIVE)) throw new BadCredentialsException(loginDTO.email() + " is already inactive.");
         UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(loginDTO.email(), loginDTO.password());
         Authentication authenticate = authenticationManager.authenticate(token);
         if (authenticate.isAuthenticated()) {

@@ -11,12 +11,12 @@ import { ReportResponseDTO, ReportScope, ALL_REPORT_SCOPES } from '../../core/mo
 import { KPIResponseDTO } from '../../core/models/kpi.models';
 import { StudyResponseDto } from '../../core/models/study.models';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
 
 @Component({
   selector: 'tl-reports',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, JsonPipe, ModalComponent, EmptyStateComponent],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, JsonPipe, ModalComponent, SpinnerComponent],
   templateUrl: './reports.component.html',
   styleUrls: ['./reports.component.css']
 })
@@ -36,6 +36,8 @@ export class ReportsComponent implements OnInit {
 
   reportOpen = signal(false);
   kpiOpen = signal(false);
+  loading = signal(true);
+  error = signal<string | null>(null);
 
   canViewReports = computed(() => this.auth.can('REPORT_VIEW'));
   canCreateReport = computed(() => this.auth.can('REPORT_CREATE'));
@@ -63,9 +65,14 @@ export class ReportsComponent implements OnInit {
   }
 
   loadReports() {
+    this.loading.set(true);
+    this.error.set(null);
     const sc = this.scopeFilter();
-    if (sc) this.rApi.byScope(sc as ReportScope).subscribe(v => this.reports.set(v ?? []));
-    else this.rApi.list().subscribe(v => this.reports.set(v ?? []));
+    const obs = sc ? this.rApi.byScope(sc as ReportScope) : this.rApi.list();
+    obs.subscribe({
+      next: v => { this.reports.set(v ?? []); this.loading.set(false); },
+      error: e => { this.error.set(extractErrorMessage(e, 'Could not load reports.')); this.loading.set(false); }
+    });
   }
 
   openReport() {
@@ -75,8 +82,7 @@ export class ReportsComponent implements OnInit {
   submitReport() {
     if (this.reportForm.invalid) return;
     this.rApi.create(this.reportForm.getRawValue() as any).subscribe({
-      next: () => { this.toast.success('Report created'); this.reportOpen.set(false); this.loadReports(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+      next: () => { this.toast.success('Report created'); this.reportOpen.set(false); this.loadReports(); }
     });
   }
 
@@ -90,8 +96,7 @@ export class ReportsComponent implements OnInit {
       next: () => {
         this.toast.success('KPI created'); this.kpiOpen.set(false);
         this.kApi.list().subscribe(v => this.kpis.set(v ?? []));
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+      }
     });
   }
 
@@ -116,8 +121,7 @@ export class ReportsComponent implements OnInit {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         this.toast.success('Download started');
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Report file could not be downloaded.'))
+      }
     });
   }
 }

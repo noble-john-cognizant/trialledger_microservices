@@ -8,12 +8,13 @@ import { ToastService } from '../../core/services/toast.service';
 import { ProvenanceDTO, DatasetSnapshot, AuditPackage } from '../../core/models/provenance.models';
 import { StudyResponseDto } from '../../core/models/study.models';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { extractErrorMessage } from '../../core/utils/error-message';
 
 @Component({
   selector: 'tl-provenance',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, DatePipe, JsonPipe, ModalComponent, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, DatePipe, JsonPipe, ModalComponent, SpinnerComponent],
   templateUrl: './provenance.component.html',
   styleUrls: ['./provenance.component.css']
 })
@@ -39,6 +40,8 @@ export class ProvenanceComponent implements OnInit {
   snapshotOpen = signal(false);
   packageOpen = signal(false);
   newSnapshotStudy: number | null = null;
+  loading = signal(true);
+  error = signal<string | null>(null);
 
   canViewRecords = computed(() => this.auth.can('PROVENANCE_VIEW'));
   canViewSnapshots = computed(() => this.auth.can('SNAPSHOT_VIEW'));
@@ -62,10 +65,17 @@ export class ProvenanceComponent implements OnInit {
   }
 
   loadRecords() {
+    this.loading.set(true);
+    this.error.set(null);
     this.api.page(this.page(), 20).subscribe({
       next: r => {
         this.records.set(r?.content ?? []);
         this.totalPages.set(r?.totalPages ?? 1);
+        this.loading.set(false);
+      },
+      error: e => {
+        this.error.set(extractErrorMessage(e, 'Could not load provenance.'));
+        this.loading.set(false);
       }
     });
   }

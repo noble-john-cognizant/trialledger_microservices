@@ -158,7 +158,7 @@ public class ConsentService {
         // user registered with). For all other roles we allow the lookup.
         var caller = UserUtil.getCurrentUser();
         if ("PARTICIPANT".equalsIgnoreCase(caller.getRole())) {
-            UserDTO me;
+            UserDTO me = null;
             try {
                 me = authClient.getUserById(caller.getUserId());
             } catch (Exception ex) {

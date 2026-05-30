@@ -5,9 +5,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.net.URL;
 
-@FeignClient(name = "STUDY-SERVICE",
-contextId ="studyClient", url="http://localhost:8082/api/studies",
-        fallback = StudyClientFallback.class) // MUST match Eureka name
+@FeignClient(name = "STUDY-SERVICE", path = "/api/studies",
+        fallback = StudyClientFallback.class)
 public interface StudyClient {
 
     @GetMapping("/{studyId}")

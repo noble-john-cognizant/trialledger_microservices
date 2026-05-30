@@ -25,9 +25,23 @@
 
 <div class="card">
   <div class="card-body p-0">
-    @if (filtered().length === 0) {
+    @if (loading()) {
       <div class="p-4">
-        <tl-empty icon="bi-person-badge" title="No users found" description="Try adjusting your filters." />
+        <tl-spinner block label="Loading users…" />
+      </div>
+    } @else if (error()) {
+      <div class="p-4">
+        <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+          <span>{{ error() }}</span>
+          <button class="btn btn-sm btn-outline-danger" (click)="load()">Retry</button>
+        </div>
+      </div>
+    } @else if (filtered().length === 0) {
+      <div class="p-4">
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No users found</div>
+          <div class="small">Try adjusting your filters.</div>
+        </div>
       </div>
     } @else {
       <div class="table-responsive">

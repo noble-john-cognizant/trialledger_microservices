@@ -15,16 +15,15 @@ import { ParticipantResponseDTO } from '../../core/models/participant.models';
 import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
-import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'tl-adverse-events',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, DatePipe,
-    StatusBadgeComponent, ModalComponent, EmptyStateComponent, SearchSelectComponent],
-  templateUrl: './adverse-events.component.html',
-  styleUrls: ['./adverse-events.component.css']
+    StatusBadgeComponent, ModalComponent, SpinnerComponent],
+  templateUrl: './adverse-events.component.html'
 })
 export class AdverseEventsComponent implements OnInit {
   private api = inject(AdverseEventService);
@@ -33,6 +32,7 @@ export class AdverseEventsComponent implements OnInit {
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
+  private notification = inject(NotificationService);
 
   severities = ALL_SEVERITIES;
   statuses = ALL_AE_STATUSES;
@@ -50,6 +50,8 @@ export class AdverseEventsComponent implements OnInit {
 
   selected = signal<AdverseEventResponseDto | null>(null);
   followUps = signal<AEFollowUpResponseDto[]>([]);
+  loading = signal(true);
+  error = signal<string | null>(null);
 
   canReport = computed(() => this.auth.can('AE_CREATE'));
   canManage = computed(() => this.auth.can('AE_MANAGE'));
@@ -58,19 +60,6 @@ export class AdverseEventsComponent implements OnInit {
   canViewFollowUp = computed(() => this.auth.can('AE_FOLLOWUP_VIEW'));
   canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
   canListStudy = computed(() => this.auth.can('STUDY_LIST'));
-
-  participantOptions = computed<SearchOption[]>(() =>
-    this.participants().map(p => ({
-      id: p.participantId, label: p.name,
-      subtitle: `${p.externalId} · Study #${p.studyId}`
-    }))
-  );
-  studyOptions = computed<SearchOption[]>(() =>
-    this.studies().map(s => ({
-      id: s.studyId, label: s.title,
-      subtitle: `${s.sponsor} · #${s.protocolNumber}`
-    }))
-  );
 
   setParticipant(id: number | null) { this.form.patchValue({ participantId: id }); }
   setStudy(id: number | null)       { this.form.patchValue({ studyId: id }); }
@@ -98,9 +87,18 @@ export class AdverseEventsComponent implements OnInit {
   });
 
   ngOnInit() {
-    this.api.list().subscribe(v => this.list.set(v ?? []));
+    this.load();
     if (this.canListParticipants()) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
     if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
+  }
+
+  load() {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api.list().subscribe({
+      next: v => { this.list.set(v ?? []); this.loading.set(false); },
+      error: e => { this.error.set(extractErrorMessage(e, 'Could not load adverse events.')); this.loading.set(false); }
+    });
   }
 
   openReport() {
@@ -115,10 +113,11 @@ export class AdverseEventsComponent implements OnInit {
     if (this.form.invalid) return;
     this.api.create(this.form.getRawValue() as any).subscribe({
       next: () => {
-        this.toast.success('Reported'); this.reportOpen.set(false);
+        this.toast.success('Reported');
+         this.reportOpen.set(false);
         this.api.list().subscribe(v => this.list.set(v ?? []));
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+        this.notification.refresh();
+      }
     });
   }
 
@@ -134,8 +133,10 @@ export class AdverseEventsComponent implements OnInit {
     const ae = this.selected(); if (!ae || !s) return;
     this.api.updateSeverity(ae.aeId, s as Severity).subscribe({
       next: u => {
-        this.toast.success('Severity updated'); this.selected.set(u);
+        this.toast.success('Severity updated'); 
+        this.selected.set(u);
         this.api.list().subscribe(v => this.list.set(v ?? []));
+        this.notification.refresh();
       }
     });
   }
@@ -143,8 +144,10 @@ export class AdverseEventsComponent implements OnInit {
     const ae = this.selected(); if (!ae || !s) return;
     this.api.updateStatus(ae.aeId, s as AEStatus).subscribe({
       next: u => {
-        this.toast.success('Status updated'); this.selected.set(u);
+        this.toast.success('Status updated');
+         this.selected.set(u);
         this.api.list().subscribe(v => this.list.set(v ?? []));
+        this.notification.refresh();
       }
     });
   }
@@ -163,10 +166,11 @@ export class AdverseEventsComponent implements OnInit {
     const ae = this.selected(); if (!ae || this.followForm.invalid) return;
     this.api.addFollowUp(ae.aeId, this.followForm.getRawValue() as any).subscribe({
       next: () => {
-        this.toast.success('Follow-up added'); this.followOpen.set(false);
+        this.toast.success('Follow-up added');
+         this.followOpen.set(false);
         this.api.followUps(ae.aeId).subscribe(v => this.followUps.set(v ?? []));
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+        this.notification.refresh();
+      }
     });
   }
 }

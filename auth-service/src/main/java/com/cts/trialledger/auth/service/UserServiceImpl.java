@@ -6,6 +6,7 @@ import com.cts.trialledger.auth.dto.RegisterDTO;
 import com.cts.trialledger.auth.dto.UpdateUserDTO;
 import com.cts.trialledger.auth.dto.UserDTO;
 import com.cts.trialledger.auth.entity.User;
+import com.cts.trialledger.auth.exception.RoleNotAllowed;
 import com.cts.trialledger.auth.exception.UserAlreadyExistException;
 import com.cts.trialledger.auth.exception.UserNotFoundException;
 import com.cts.trialledger.auth.mapper.UserMapper;
@@ -82,6 +83,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public void registerUser(RegisterDTO dto, String role) {
         Role r = AuthValidator.validateRole(role);
+        if (r.equals(Role.PARTICIPANT)) throw new
+                RoleNotAllowed("Role: Participant can't be registered here. Participant automatically registered when they enrolled in study.");
         Optional<User> userOptional = userRepository.findByEmail(dto.email());
         if (userOptional.isPresent()) throw new UserAlreadyExistException(dto.email() + " already exist.");
         User user = new User();

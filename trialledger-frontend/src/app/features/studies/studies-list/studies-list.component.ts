@@ -11,12 +11,13 @@ import {
 } from '../../../core/models/study.models';
 import { StatusBadgeComponent } from '../../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../../shared/empty-state/empty-state.component';
+import { SpinnerComponent } from '../../../shared/spinner/spinner.component';
 
 @Component({
   selector: 'tl-studies-list',
   standalone: true,
-  imports: [CommonModule, RouterLink, ReactiveFormsModule, DatePipe, StatusBadgeComponent, ModalComponent, EmptyStateComponent],
+  imports: [CommonModule, RouterLink, ReactiveFormsModule, DatePipe,
+    StatusBadgeComponent, ModalComponent, SpinnerComponent],
   templateUrl: './studies-list.component.html',
   styleUrls: ['./studies-list.component.css']
 })
@@ -31,6 +32,8 @@ export class StudiesListComponent implements OnInit {
   search = signal('');
   statusFilter = signal('');
   createOpen = signal(false);
+  loading = signal(true);
+  error = signal<string | null>(null);
 
   canCreate = computed(() => this.auth.can('STUDY_CREATE'));
   canManage = computed(() => this.auth.can('STUDY_MANAGE'));
@@ -54,7 +57,14 @@ export class StudiesListComponent implements OnInit {
   });
 
   ngOnInit() { this.load(); }
-  load() { this.api.list().subscribe({ next: v => this.list.set(v ?? []) }); }
+  load() {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api.list().subscribe({
+      next: v => { this.list.set(v ?? []); this.loading.set(false); },
+      error: e => { this.error.set(extractErrorMessage(e, 'Could not load studies.')); this.loading.set(false); }
+    });
+  }
 
   openCreate() {
     this.form.reset({ title: '', sponsor: '', protocolNumber: '', startDate: '', endDate: '' });
@@ -64,8 +74,7 @@ export class StudiesListComponent implements OnInit {
   submit() {
     if (this.form.invalid) return;
     this.api.create(this.form.getRawValue()).subscribe({
-      next: () => { this.toast.success('Study created'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Create failed'))
+      next: () => { this.toast.success('Study created'); this.createOpen.set(false); this.load(); }
     });
   }
 

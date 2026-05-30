@@ -28,7 +28,7 @@ public class StudyController {
     }
 
     @GetMapping("/{studyId}")
-    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER','COORDINATOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','TECHNICIAN','AUDITOR','COMPLIANCE','DATA_MANAGER','COORDINATOR','PARTICIPANT')")
     public ResponseEntity<StudyResponseDto> getStudyById(@PathVariable Long studyId) {
         return ResponseEntity.ok(studyService.getStudyById(studyId));
     }

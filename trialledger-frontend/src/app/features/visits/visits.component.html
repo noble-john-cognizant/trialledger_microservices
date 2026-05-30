@@ -11,7 +11,8 @@
 </div>
 
 <!-- ── Filter bar ──────────────────────────────────────────────────────────── -->
-<div class="card mb-3">
+@if (!isParticipant()) {
+<div class="card mb-3" >
   <div class="card-body d-flex flex-wrap gap-2 align-items-center">
     <select class="form-select" style="max-width:200px"
             (change)="scope.set($any($event.target).value)">
@@ -21,23 +22,35 @@
 
     @if (scope() === 'participant') {
       <div style="min-width:280px; max-width:380px; flex:1">
-        <tl-search-select
-          [items]="participantOptions()"
-          [value]="participantId()"
-          [canList]="canListParticipants()"
-          [placeholder]="'Search participant…'"
-          [idPlaceholder]="'Enter participant ID'"
-          (valueChange)="participantId.set($event)" />
+        @if (canListParticipants()) {
+          <select class="form-select" [value]="participantId() ?? ''"
+                  (change)="participantId.set(+($any($event.target).value) || null)">
+            <option value="">— Select participant —</option>
+            @for (p of participants(); track p.participantId) {
+              <option [value]="p.participantId">#{{ p.participantId }} {{ p.name }}</option>
+            }
+          </select>
+        } @else {
+          <input type="number" class="form-control" placeholder="Enter participant ID"
+                 [value]="participantId() ?? ''"
+                 (input)="participantId.set(+($any($event.target).value) || null)">
+        }
       </div>
     } @else {
       <div style="min-width:280px; max-width:380px; flex:1">
-        <tl-search-select
-          [items]="studyOptions()"
-          [value]="studyId()"
-          [canList]="canListStudy()"
-          [placeholder]="'Search study…'"
-          [idPlaceholder]="'Enter study ID'"
-          (valueChange)="studyId.set($event)" />
+        @if (canListStudy()) {
+          <select class="form-select" [value]="studyId() ?? ''"
+                  (change)="studyId.set(+($any($event.target).value) || null)">
+            <option value="">— Select study —</option>
+            @for (s of studies(); track s.studyId) {
+              <option [value]="s.studyId">#{{ s.studyId }} {{ s.title }}</option>
+            }
+          </select>
+        } @else {
+          <input type="number" class="form-control" placeholder="Enter study ID"
+                 [value]="studyId() ?? ''"
+                 (input)="studyId.set(+($any($event.target).value) || null)">
+        }
       </div>
     }
 
@@ -45,14 +58,27 @@
     <span class="ms-auto small text-muted">{{ list().length }} visits</span>
   </div>
 </div>
-
+}
 <!-- ── Visits table ────────────────────────────────────────────────────────── -->
 <div class="card">
   <div class="card-body p-0">
-    @if (list().length === 0) {
+    @if (loading()) {
       <div class="p-4">
-        <tl-empty icon="bi-calendar-event" title="No visits loaded"
-          description="Choose a participant or study above, then click Load." />
+        <tl-spinner block label="Loading visits…" />
+      </div>
+    } @else if (error()) {
+      <div class="p-4">
+        <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+          <span>{{ error() }}</span>
+          <button class="btn btn-sm btn-outline-danger" (click)="load()">Retry</button>
+        </div>
+      </div>
+    } @else if (list().length === 0) {
+      <div class="p-4">
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No visits loaded</div>
+          <div class="small">Choose a participant or study above, then click Load.</div>
+        </div>
       </div>
     } @else {
       <div class="table-responsive">
@@ -276,21 +302,37 @@
   <form [formGroup]="form" class="row g-3">
     <div class="col-md-6">
       <label class="form-label">Participant <span class="text-danger">*</span></label>
-      <tl-search-select
-        [items]="participantOptions()"
-        [value]="form.controls.participantId.value"
-        [canList]="canListParticipants()"
-        [idPlaceholder]="'Enter participant ID'"
-        (valueChange)="setParticipant($event)" />
+      @if (canListParticipants()) {
+        <select class="form-select"
+                [value]="form.controls.participantId.value ?? ''"
+                (change)="setParticipant(+($any($event.target).value) || null)">
+          <option value="">— Select participant —</option>
+          @for (p of participants(); track p.participantId) {
+            <option [value]="p.participantId">#{{ p.participantId }} {{ p.name }}</option>
+          }
+        </select>
+      } @else {
+        <input type="number" class="form-control" placeholder="Enter participant ID"
+               [value]="form.controls.participantId.value ?? ''"
+               (input)="setParticipant(+($any($event.target).value) || null)">
+      }
     </div>
     <div class="col-md-6">
       <label class="form-label">Study <span class="text-danger">*</span></label>
-      <tl-search-select
-        [items]="studyOptions()"
-        [value]="form.controls.studyId.value"
-        [canList]="canListStudy()"
-        [idPlaceholder]="'Enter study ID'"
-        (valueChange)="setStudy($event)" />
+      @if (canListStudy()) {
+        <select class="form-select"
+                [value]="form.controls.studyId.value ?? ''"
+                (change)="setStudy(+($any($event.target).value) || null)">
+          <option value="">— Select study —</option>
+          @for (s of studies(); track s.studyId) {
+            <option [value]="s.studyId">#{{ s.studyId }} {{ s.title }}</option>
+          }
+        </select>
+      } @else {
+        <input type="number" class="form-control" placeholder="Enter study ID"
+               [value]="form.controls.studyId.value ?? ''"
+               (input)="setStudy(+($any($event.target).value) || null)">
+      }
     </div>
     <div class="col-md-6">
       <label class="form-label">Visit type <span class="text-danger">*</span></label>

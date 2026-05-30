@@ -4,7 +4,6 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ConsentService } from '../../core/services/consent.service';
 import { ParticipantService } from '../../core/services/participant.service';
 import { StudyService } from '../../core/services/study.service';
-import { UserService } from '../../core/services/user.service';
 import { AuthService } from '../../core/auth/auth.service';
 import { ToastService } from '../../core/services/toast.service';
 import { ConsentMethod, ConsentResponseDTO } from '../../core/models/consent.models';
@@ -12,26 +11,25 @@ import { ParticipantResponseDTO } from '../../core/models/participant.models';
 import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
-import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
 import { extractErrorMessage } from '../../core/utils/error-message';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'tl-consents',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, DatePipe,
-    StatusBadgeComponent, ModalComponent, EmptyStateComponent, SearchSelectComponent],
-  templateUrl: './consents.component.html',
-  styleUrls: ['./consents.component.css']
+    StatusBadgeComponent, ModalComponent, SpinnerComponent],
+  templateUrl: './consents.component.html'
 })
 export class ConsentsComponent implements OnInit {
   private api = inject(ConsentService);
   private partApi = inject(ParticipantService);
   private studyApi = inject(StudyService);
-  private userApi = inject(UserService);
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
+  private notification = inject(NotificationService);
 
   scope = signal<'participant' | 'study'>('participant');
   participantId = signal<number | null>(null);
@@ -43,6 +41,8 @@ export class ConsentsComponent implements OnInit {
   recordOpen = signal(false);
   withdrawOpen = signal(false);
   selected = signal<ConsentResponseDTO | null>(null);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   /** Logged-in user has the PARTICIPANT role -> heavily restricted view. */
   isParticipant = computed(() => this.auth.role() === 'PARTICIPANT');
@@ -51,27 +51,15 @@ export class ConsentsComponent implements OnInit {
   canWithdraw = computed(() => this.auth.can('CONSENT_WITHDRAW'));
   canVerify = computed(() => this.auth.can('CONSENT_VERIFY'));
   canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
-  /**
-   * Participants can never search by study id (product decision) — the
-   * permission already excludes them server-side, and we hide it in the
-   * UI for clarity.
-   */
-  canListStudy = computed(() =>
-    this.auth.can('STUDY_LIST') && !this.isParticipant()
-  );
 
-  participantOptions = computed<SearchOption[]>(() =>
-    this.participants().map(p => ({
-      id: p.participantId,
-      label: p.name,
-      subtitle: `${p.externalId} · Study #${p.studyId}`
-    }))
-  );
-  studyOptions = computed<SearchOption[]>(() =>
-    this.studies().map(s => ({
-      id: s.studyId, label: s.title,
-      subtitle: `${s.sponsor} · #${s.protocolNumber}`
-    }))
+  /** Mirrors backend GET /api/consents/study/{studyId} access. */
+  canViewByStudy = computed(() => this.auth.can('CONSENT_VIEW_BY_STUDY'));
+  /** Mirrors backend GET /api/consents/participant/{id} access. */
+  canViewByParticipant = computed(() => this.auth.can('CONSENT_VIEW_BY_PARTICIPANT'));
+
+  /** Whether the study-id picker should be shown. */
+  canListStudy = computed(() =>
+    this.auth.can('STUDY_LIST') && this.canViewByStudy()
   );
 
   setRecordParticipant(id: number | null) { this.recordForm.patchValue({ participantId: id }); }
@@ -93,48 +81,27 @@ export class ConsentsComponent implements OnInit {
     if (this.canListParticipants()) this.partApi.list().subscribe(v => this.participants.set(v ?? []));
     if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
 
-    if (this.isParticipant()) {
-      // PARTICIPANT: lock the scope to "by participant", auto-resolve THEIR
-      // participantId via /users/{me} -> phone -> /participants/by-phone/{phone}
-      // and load only their own consents. No way to view other participants
-      // or search by study.
+    // Default scope: if the user can only view by-participant, force it.
+    if (!this.canViewByStudy() && this.canViewByParticipant()) {
       this.scope.set('participant');
-      this.autoResolveOwnParticipantId();
+    }
+
+    if (this.isParticipant()) {
+      // PARTICIPANT: lock scope to "by participant" and use the cached id.
+      this.scope.set('participant');
+      const me = this.auth.participant();
+      if (me) {
+        this.participantId.set(me.participantId);
+        this.load();
+      } else {
+        this.toast.error("We couldn't find an enrollment for your account yet.");
+      }
       return;
     }
 
-    // For staff: support deep-linking via ?participantId=N
-    const url = new URL(window.location.href);
+       const url = new URL(window.location.href);
     const pid = url.searchParams.get('participantId');
     if (pid) { this.scope.set('participant'); this.participantId.set(+pid); this.load(); }
-  }
-
-  /**
-   * For a logged-in PARTICIPANT, look up their own participant record via
-   * the by-phone endpoint we built earlier. Once we know their id, load
-   * their consents.
-   */
-  private autoResolveOwnParticipantId() {
-    const u = this.auth.user();
-    if (!u) return;
-    this.userApi.get(u.userId).subscribe({
-      next: full => {
-        if (!full?.phone) {
-          this.toast.error('Your account is missing a phone number — contact your coordinator.');
-          return;
-        }
-        this.partApi.byPhone(full.phone).subscribe({
-          next: p => {
-            this.participantId.set(p.participantId);
-            this.load();
-          },
-          error: () => {
-            this.toast.error("We couldn't find an enrollment for your account yet.");
-          }
-        });
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Could not load your profile.'))
-    });
   }
 
   participantName(id: number) {
@@ -144,15 +111,18 @@ export class ConsentsComponent implements OnInit {
   load() {
     // Always reset before fetching so a 404/error clears stale results.
     this.list.set([]);
+    this.error.set(null);
     if (this.scope() === 'participant' && this.participantId()) {
+      this.loading.set(true);
       this.api.byParticipant(this.participantId()!).subscribe({
-        next: v => this.list.set(v ?? []),
-        error: () => this.list.set([])
+        next: v => { this.list.set(v ?? []); this.loading.set(false); },
+        error: e => { this.list.set([]); this.error.set(extractErrorMessage(e, 'Could not load consents.')); this.loading.set(false); }
       });
     } else if (this.scope() === 'study' && this.studyId()) {
+      this.loading.set(true);
       this.api.byStudy(this.studyId()!).subscribe({
-        next: v => this.list.set(v ?? []),
-        error: () => this.list.set([])
+        next: v => { this.list.set(v ?? []); this.loading.set(false); },
+        error: e => { this.list.set([]); this.error.set(extractErrorMessage(e, 'Could not load consents.')); this.loading.set(false); }
       });
     }
   }
@@ -164,8 +134,14 @@ export class ConsentsComponent implements OnInit {
   submitRecord() {
     if (this.recordForm.invalid) return;
     this.api.create(this.recordForm.getRawValue() as any).subscribe({
-      next: () => { this.toast.success('Consent recorded'); this.recordOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Could not record consent.'))
+      next: () => {
+         this.toast.success('Consent recorded');
+          this.recordOpen.set(false); 
+          this.load();
+          if(this.isParticipant())
+            this.partApi.get(this.participantId()!).subscribe(p => this.auth.persistParticipant(p!));
+        this.notification.refresh()
+       }
     });
   }
   openWithdraw(c: ConsentResponseDTO) {
@@ -181,14 +157,15 @@ export class ConsentsComponent implements OnInit {
       withdrawnBy: me?.userId ?? 0,
       ...this.withdrawForm.getRawValue()
     }).subscribe({
-      next: () => { this.toast.success('Withdrawn'); this.withdrawOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Could not withdraw consent.'))
+      next: () => { this.toast.success('Withdrawn'); 
+        this.withdrawOpen.set(false); 
+        this.load();
+      this.notification.refresh() }
     });
   }
   verify(c: ConsentResponseDTO) {
     this.api.verify(c.consentId).subscribe({
-      next: m => this.toast.success(m || 'Verified'),
-      error: e => this.toast.error(extractErrorMessage(e, 'Verification failed'))
+      next: m => this.toast.success(m || 'Verified')
     });
   }
 }

@@ -8,6 +8,8 @@ import com.cts.trialledger.apigateway.repository.AuditLogRepository;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -15,7 +17,6 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 @Service
@@ -33,7 +34,6 @@ public class AuditService {
         try {
             Long userId = extractUserId(request);
 
-            // Build a details map → serialize to JSON string
             Map<String, Object> details = new LinkedHashMap<>();
             details.put("statusCode", statusCode);
             details.put("durationMs", durationMs);
@@ -42,22 +42,20 @@ public class AuditService {
             details.put("queryString", request.getQueryString());
 
             AuditLog log = AuditLog.builder()
-                    .userId(userId)                                      // WHO made the request
-                    .action(request.getMethod())                         // WHAT method: GET/POST...
-                    .resource(request.getRequestURI())                   // WHERE: /api/orders/42
-                    .timestamp(LocalDateTime.now())                      // WHEN
-                    .details(objectMapper.writeValueAsString(details))   // HOW: metadata JSON
+                    .userId(userId)
+                    .action(request.getMethod())
+                    .resource(request.getRequestURI())
+                    .timestamp(LocalDateTime.now())
+                    .details(objectMapper.writeValueAsString(details))
                     .build();
 
             auditLogRepository.save(log);
 
         } catch (Exception e) {
-            // Never let audit failure crash the main request
             log.error("Failed to save audit log", e);
         }
     }
 
-    // Extract userId from Spring Security context (already authenticated by your security config)
     private Long extractUserId(HttpServletRequest request) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null && auth.isAuthenticated() &&
@@ -71,19 +69,21 @@ public class AuditService {
         return request.getRemoteAddr();
     }
 
-    public List<AuditLogDTO> getAllAuditLogs() {
-        return auditLogRepository.findAll().stream().map(AuditMapper::convertToAuditLogDTO).toList();
+    // ---------- Paged queries ----------
+
+    public Page<AuditLogDTO> getAllAuditLogs(Pageable pageable) {
+        return auditLogRepository.findAll(pageable).map(AuditMapper::convertToAuditLogDTO);
     }
 
-    public List<AuditLogDTO> getAllAuditLogsByUserId(Long userId) {
-        return auditLogRepository.findByUserId(userId).stream().map(AuditMapper::convertToAuditLogDTO).toList();
+    public Page<AuditLogDTO> getAllAuditLogsByUserId(Long userId, Pageable pageable) {
+        return auditLogRepository.findByUserId(userId, pageable).map(AuditMapper::convertToAuditLogDTO);
     }
 
-    public List<AuditLogDTO> getAllAuditLogsByAction(String action) {
-        return auditLogRepository.findByAction(action).stream().map(AuditMapper::convertToAuditLogDTO).toList();
+    public Page<AuditLogDTO> getAllAuditLogsByAction(String action, Pageable pageable) {
+        return auditLogRepository.findByAction(action, pageable).map(AuditMapper::convertToAuditLogDTO);
     }
 
-    public List<AuditLogDTO> getAllAuditLogsBetween(LocalDateTime from, LocalDateTime to) {
-        return auditLogRepository.findByTimestampBetween(from, to).stream().map(AuditMapper::convertToAuditLogDTO).toList();
+    public Page<AuditLogDTO> getAllAuditLogsBetween(LocalDateTime from, LocalDateTime to, Pageable pageable) {
+        return auditLogRepository.findByTimestampBetween(from, to, pageable).map(AuditMapper::convertToAuditLogDTO);
     }
 }

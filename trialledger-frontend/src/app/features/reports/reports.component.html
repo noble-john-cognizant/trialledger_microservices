@@ -34,8 +34,18 @@
             </select>
           </div>
 
-        @if (reports().length === 0) {
-        <tl-empty icon="bi-bar-chart" title="No reports yet" description="Create a report to get started." />
+        @if (loading()) {
+          <tl-spinner block label="Loading reports…" />
+        } @else if (error()) {
+          <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+            <span>{{ error() }}</span>
+            <button class="btn btn-sm btn-outline-danger" (click)="loadReports()">Retry</button>
+          </div>
+        } @else if (reports().length === 0) {
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No reports yet</div>
+          <div class="small">Create a report to get started.</div>
+        </div>
         } @else {
         <ul class="list-unstyled mb-0">
           @for (r of reports(); track r.reportId) {
@@ -76,7 +86,10 @@
         </div>
         <div class="card-body">
           @if (kpis().length === 0) {
-            <tl-empty icon="bi-bullseye" title="No KPIs configured" description="Define a KPI to monitor performance." />
+            <div class="text-center text-muted py-4">
+              <div class="fw-semibold mb-1">No KPIs configured</div>
+              <div class="small">Define a KPI to monitor performance.</div>
+            </div>
           } @else {
             @for (k of kpis(); track k.kpiId) {
               <div class="kpi-tile">

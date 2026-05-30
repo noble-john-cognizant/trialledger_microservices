@@ -38,9 +38,23 @@
 @if (tab() === 'records' && canViewRecords()) {
   <div class="card">
     <div class="card-body p-0">
-      @if (records().length === 0) {
+      @if (loading()) {
         <div class="p-4">
-          <tl-empty icon="bi-link-45deg" title="No provenance records" description="Activity will appear here as actions happen." />
+          <tl-spinner block label="Loading provenance…" />
+        </div>
+      } @else if (error()) {
+        <div class="p-4">
+          <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+            <span>{{ error() }}</span>
+            <button class="btn btn-sm btn-outline-danger" (click)="loadRecords()">Retry</button>
+          </div>
+        </div>
+      } @else if (records().length === 0) {
+        <div class="p-4">
+          <div class="text-center text-muted py-4">
+            <div class="fw-semibold mb-1">No provenance records</div>
+            <div class="small">Activity will appear here as actions happen.</div>
+          </div>
         </div>
       } @else {
         <div class="table-responsive">
@@ -91,7 +105,10 @@
         </select>
       </div>
       @if (snapshots().length === 0) {
-        <tl-empty icon="bi-camera" title="No snapshots" description="Generate a snapshot from a study above." />
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No snapshots</div>
+          <div class="small">Generate a snapshot from a study above.</div>
+        </div>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover align-middle">
@@ -125,7 +142,10 @@
         </select>
       </div>
       @if (packages().length === 0) {
-        <tl-empty icon="bi-archive" title="No audit packages" description="Generate one for the selected study." />
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No audit packages</div>
+          <div class="small">Generate one for the selected study.</div>
+        </div>
       } @else {
         <div class="table-responsive">
           <table class="table table-hover align-middle">

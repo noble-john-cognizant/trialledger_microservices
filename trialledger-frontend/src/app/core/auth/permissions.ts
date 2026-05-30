@@ -1,13 +1,5 @@
 import { Role } from '../models/user.models';
 
-/**
- * Single source of truth that mirrors the @PreAuthorize annotations
- * on the Spring Boot backend controllers. Used by:
- *  - route guards (block direct URL access)
- *  - components (hide buttons / menu items the user can't use)
- *
- * Keep this aligned with the backend @PreAuthorize rules.
- */
 export const PERMISSIONS = {
   // Users
   USER_REGISTER:           ['ADMIN'],
@@ -20,29 +12,31 @@ export const PERMISSIONS = {
 
   // Studies
   STUDY_LIST:              ['ADMIN', 'PI', 'COORDINATOR', 'AUDITOR', 'COMPLIANCE', 'DATA_MANAGER'],
-  STUDY_VIEW:              ['ADMIN', 'PI', 'TECHNICIAN', 'AUDITOR', 'COMPLIANCE', 'DATA_MANAGER', 'COORDINATOR'],
+  STUDY_VIEW:              ['ADMIN', 'PI', 'TECHNICIAN', 'AUDITOR', 'COMPLIANCE', 'DATA_MANAGER', 'COORDINATOR', 'PARTICIPANT'],
   STUDY_CREATE:            ['ADMIN', 'PI', 'COORDINATOR'],
   STUDY_MANAGE:            ['ADMIN', 'PI'],
   STUDY_DELETE:            ['ADMIN', 'PI'],
 
   // Protocols
-  PROTOCOL_VIEW:           ['ADMIN', 'PI', 'TECHNICIAN', 'AUDITOR', 'COMPLIANCE', 'COORDINATOR'],
+  PROTOCOL_VIEW:           ['ADMIN', 'PI', 'TECHNICIAN', 'AUDITOR', 'COMPLIANCE', 'COORDINATOR', 'PARTICIPANT'],
   PROTOCOL_CREATE:         ['ADMIN', 'PI'],
   PROTOCOL_APPROVE:        ['ADMIN', 'PI', 'COMPLIANCE'],
   PROTOCOL_MANAGE:         ['ADMIN', 'PI', 'COMPLIANCE'],
 
-  // Participants — ADMIN is read-only (per product decision)
+  // Participants 
   PARTICIPANT_LIST:        ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'DATA_MANAGER'],
   PARTICIPANT_VIEW:        ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'TECHNICIAN', 'DATA_MANAGER', 'AUDITOR', 'PARTICIPANT'],
   PARTICIPANT_CREATE:      ['PI', 'COORDINATOR'],
   PARTICIPANT_UPDATE:      ['PI', 'COORDINATOR'],
   PARTICIPANT_DELETE:      ['COORDINATOR', 'PARTICIPANT'],
 
-  // Consents — ADMIN is read-only (per product decision)
-  CONSENT_CREATE:          ['COORDINATOR', 'PARTICIPANT'],
-  CONSENT_VIEW:            ['ADMIN', 'PI', 'COORDINATOR', 'TECHNICIAN', 'COMPLIANCE', 'PARTICIPANT', 'AUDITOR'],
-  CONSENT_WITHDRAW:        [ 'PI', 'COORDINATOR', 'PARTICIPANT'],
-  CONSENT_VERIFY:          ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'AUDITOR'],
+// Consents
+  CONSENT_CREATE:                ['COORDINATOR', 'PARTICIPANT'],
+  CONSENT_VIEW:                  ['ADMIN', 'PI', 'COORDINATOR', 'TECHNICIAN', 'COMPLIANCE', 'PARTICIPANT', 'AUDITOR'],
+  CONSENT_VIEW_BY_STUDY:         ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'AUDITOR'],
+  CONSENT_VIEW_BY_PARTICIPANT:   ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'AUDITOR', 'TECHNICIAN', 'PARTICIPANT'],
+  CONSENT_WITHDRAW:              ['PI', 'COORDINATOR', 'PARTICIPANT'],
+  CONSENT_VERIFY:                ['ADMIN', 'PI', 'COORDINATOR', 'COMPLIANCE', 'AUDITOR'],
 
   // Visits
   VISIT_SCHEDULE:          [ 'PI', 'COORDINATOR'],
@@ -67,7 +61,8 @@ export const PERMISSIONS = {
   // Samples
   SAMPLE_VIEW:             ['ADMIN', 'PI', 'TECHNICIAN', 'AUDITOR', 'COMPLIANCE', 'DATA_MANAGER'],
   SAMPLE_VIEW_BY_STUDY:    ['ADMIN', 'PI', 'COORDINATOR', 'TECHNICIAN', 'DATA_MANAGER'],
-  SAMPLE_CREATE:           ['ADMIN', 'COORDINATOR', 'TECHNICIAN'],
+  SAMPLE_CREATE:           [ 'COORDINATOR', 'TECHNICIAN'],
+    SAMPLE_UPDATE:           ['ADMIN', 'PI', 'TECHNICIAN', 'COORDINATOR'],
   CUSTODY_CREATE:          [ 'TECHNICIAN'],
   CUSTODY_VIEW:            ['ADMIN', 'PI', 'TECHNICIAN', 'AUDITOR', 'COMPLIANCE', 'DATA_MANAGER'],
   ASSAY_CREATE:            [ 'TECHNICIAN'],
@@ -89,12 +84,10 @@ export const PERMISSIONS = {
   KPI_CREATE:              ['ADMIN', 'PI'],
   KPI_VIEW:                ['ADMIN', 'PI', 'COMPLIANCE', 'DATA_MANAGER'],
 
-  // Notifications & Alerts
+  // Notifications
   NOTIFICATIONS_OWN:       ['ADMIN', 'PI', 'COORDINATOR', 'TECHNICIAN', 'COMPLIANCE', 'DATA_MANAGER', 'AUDITOR', 'PARTICIPANT'],
   NOTIFICATIONS_ALL:       ['ADMIN', 'COMPLIANCE'],
   NOTIFICATION_DELETE:     ['ADMIN'],
-  ALERT_VIEW:              ['ADMIN', 'COMPLIANCE'],
-  ALERT_MANAGE:            ['ADMIN'],
 } as const;
 
 export type PermissionKey = keyof typeof PERMISSIONS;

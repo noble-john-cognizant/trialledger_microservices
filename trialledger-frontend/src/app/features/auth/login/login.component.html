@@ -49,12 +49,12 @@
       <h2 class="fw-bold mb-1">Welcome back</h2>
       <p class="text-muted mb-4">Sign in to access your study workspace.</p>
 
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <form [formGroup]="form" (submit)="submit()" >
         <div class="mb-3">
           <label class="form-label">Email</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-            <input type="email" class="form-control" formControlName="email" placeholder="you@example.com" autocomplete="email">
+            <input type="email" class="form-control" formControlName="email" placeholder="you@example.com" >
           </div>
           @if (form.controls.email.invalid && form.controls.email.touched) {
             <div class="form-text text-danger">Valid email required</div>
@@ -65,7 +65,7 @@
           <label class="form-label">Password</label>
           <div class="input-group">
             <span class="input-group-text"><i class="bi bi-lock"></i></span>
-            <input type="password" class="form-control" formControlName="password" placeholder="••••••••" autocomplete="current-password">
+            <input type="password" class="form-control" formControlName="password" placeholder="••••••••">
           </div>
           @if (form.controls.password.invalid && form.controls.password.touched) {
             <div class="form-text text-danger">8–50 characters</div>

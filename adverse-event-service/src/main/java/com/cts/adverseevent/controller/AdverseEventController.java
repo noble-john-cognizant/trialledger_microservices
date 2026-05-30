@@ -44,7 +44,7 @@ public class AdverseEventController {
     }
 
     @GetMapping("/participant/{participantId}")
-    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR')")
+    @PreAuthorize("hasAnyRole('ADMIN','PI','COORDINATOR','COMPLIANCE','DATA_MANAGER','AUDITOR','PARTICIPANT')")
     public ResponseEntity<List<AdverseEventResponseDto>> getByParticipant(@PathVariable Long participantId) {
         return ResponseEntity.ok(adverseEventService.getAEByParticipant(participantId));
     }

@@ -5,9 +5,7 @@ export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 
   // ---- Public auth routes ----
-  // Self-service /register was removed by product decision. Accounts are
-  // created by an admin (via /users) or automatically during participant
-  // enrollment by a coordinator.
+  
   { path: 'login',           loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent) },
   { path: 'forgot-password', loadComponent: () => import('./features/auth/forgot-password/forgot-password.component').then(m => m.ForgotPasswordComponent) },
   { path: 'forgot-username', loadComponent: () => import('./features/auth/forgot-username/forgot-username.component').then(m => m.ForgotUsernameComponent) },
@@ -33,7 +31,7 @@ export const routes: Routes = [
         loadComponent: () => import('./features/participants/participants.component').then(m => m.ParticipantsComponent) },
       { path: 'participants/:id',
         canActivate: [permissionGuard('PARTICIPANT_VIEW')],
-        loadComponent: () => import('./features/participants/participant-detail/participant-detail.component').then(m => m.ParticipantDetailComponent) },
+        loadComponent: () => import('./features/participants/participant-dashboard/participant-dashboard.component').then(m => m.ParticipantDashboardComponent) },
 
       { path: 'consents',
         canActivate: [permissionGuard('CONSENT_VIEW')],
@@ -62,6 +60,14 @@ export const routes: Routes = [
       { path: 'notifications',
         loadComponent: () => import('./features/notifications/notifications-list/notifications-list.component').then(m => m.NotificationsListComponent) },
 
+      // Participant-scoped views — auto-resolve the logged-in participant's own id.
+      { path: 'my-study',
+        loadComponent: () => import('./features/participants/my/my-study.component').then(m => m.MyStudyComponent) },
+      { path: 'my-samples',
+        loadComponent: () => import('./features/participants/my/my-samples.component').then(m => m.MySamplesComponent) },
+      { path: 'my-adverse-events',
+        loadComponent: () => import('./features/participants/my/my-adverse-events.component').then(m => m.MyAdverseEventsComponent) },
+
       { path: 'users',
         canActivate: [permissionGuard('USER_LIST')],
         loadComponent: () => import('./features/users/users-list/users-list.component').then(m => m.UsersListComponent) },
@@ -69,10 +75,6 @@ export const routes: Routes = [
       { path: 'audit-log',
         canActivate: [permissionGuard('AUDIT_VIEW')],
         loadComponent: () => import('./features/users/audit-log/audit-log.component').then(m => m.AuditLogComponent) },
-
-      { path: 'alert-rules',
-        canActivate: [permissionGuard('ALERT_VIEW')],
-        loadComponent: () => import('./features/notifications/alert-rules/alert-rules.component').then(m => m.AlertRulesComponent) },
     ]
   },
 

@@ -2,7 +2,7 @@
   <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
     <div>
       <a routerLink="/studies" class="small text-muted">← Back to studies</a>
-      <h2 class="fw-bold mb-1">{{ s.title }}</h2>
+      <h2 class="fw-bold mb-1">{{ s.title }} #{{s.studyId}}</h2>
       <p class="text-muted mb-0">
         {{ s.sponsor }} · Protocol #{{ s.protocolNumber }} ·
         <tl-status [value]="s.status" />
@@ -12,7 +12,11 @@
       <button class="btn btn-primary" (click)="openProtocol()">
         <i class="bi bi-plus-lg me-1"></i> New protocol version
       </button>
-    }
+    } @if (canEnroll()) {
+                <button class="btn btn-sm btn-primary" (click)="openEnroll()" title="Enroll a participant into this study">
+                  <i class="bi bi-plus-lg me-1"></i> Enroll Participant
+                </button>
+              }
   </div>
 
   <div class="row g-3 mb-4">
@@ -20,13 +24,13 @@
       <div class="col-md-6 col-xl-3">
         <div class="card"><div class="card-body">
           <div class="text-muted small">Participants</div>
-          <div class="fs-3 fw-bold">{{ stats()?.totalParticipants ?? participants().length }}</div>
+          <div class="fs-5 fw-bold">{{ stats()?.totalParticipants ?? participants().length }}</div>
         </div></div>
       </div>
       <div class="col-md-6 col-xl-3">
         <div class="card"><div class="card-body">
           <div class="text-muted small">Enrolled</div>
-          <div class="fs-3 fw-bold">{{ stats()?.enrolledCount ?? '—' }}</div>
+          <div class="fs-5 fw-bold">{{ stats()?.enrolledCount ?? '—' }}</div>
         </div></div>
       </div>
     }
@@ -34,14 +38,14 @@
       <div class="col-md-6 col-xl-3">
         <div class="card"><div class="card-body">
           <div class="text-muted small">Samples</div>
-          <div class="fs-3 fw-bold">{{ samples().length }}</div>
+          <div class="fs-5 fw-bold">{{ samples().length }}</div>
         </div></div>
       </div>
     }
     <div class="col-md-6 col-xl-3">
       <div class="card"><div class="card-body">
         <div class="text-muted small">Adverse events</div>
-        <div class="fs-3 fw-bold">{{ adverseEvents().length }}</div>
+        <div class="fs-5 fw-bold">{{ adverseEvents().length }}</div>
       </div></div>
     </div>
   </div>
@@ -54,7 +58,10 @@
     <div class="card-body p-0">
       @if (protocols().length === 0) {
         <div class="p-4">
-          <tl-empty icon="bi-file-earmark-text" title="No protocol versions" description="Add the first version to begin." />
+          <div class="text-center text-muted py-4">
+            <div class="fw-semibold mb-1">No protocol versions</div>
+            <div class="small">Add the first version to begin.</div>
+          </div>
         </div>
       } @else {
         <div class="table-responsive">
@@ -105,7 +112,10 @@
         <div class="card">
           <div class="card-header bg-white d-flex justify-content-between align-items-center">
             <h6 class="fw-bold mb-0">Participants</h6>
-            <a [routerLink]="['/participants']" [queryParams]="{ studyId: id }" class="small">View →</a>
+            <div class="d-flex align-items-center gap-2">
+             
+              <a [routerLink]="['/participants']" [queryParams]="{ studyId: id }" class="small">View →</a>
+            </div>
           </div>
           <div class="card-body p-0">
             @if (participants().length === 0) { <div class="p-3 text-muted">No participants yet.</div> }
@@ -165,6 +175,44 @@
       <button class="btn btn-primary" [disabled]="protForm.invalid" (click)="submitProt()">Save</button>
     </div>
   </tl-modal>
-} @else {
-  <div class="skeleton" style="height:240px"></div>
+
+  <tl-modal [open]="enrollOpen()" title="Enroll participant" (close)="enrollOpen.set(false)">
+    <form [formGroup]="enrollForm" class="row g-3">
+      <div class="col-12">
+        <div class="alert alert-info py-2 mb-0 small">
+          Enrolling into <strong>{{ s.title }}</strong> (#{{ s.studyId }}).
+        </div>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">External ID</label>
+        <input class="form-control" formControlName="externalId" placeholder="e.g. P-2026-001">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Full name</label>
+        <input class="form-control" formControlName="name">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Email</label>
+        <input type="email" class="form-control" formControlName="email" placeholder="participant@example.com">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Phone</label>
+        <input class="form-control" formControlName="phone">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label">Date of birth</label>
+        <input type="date" class="form-control" formControlName="dob">
+      </div>
+    </form>
+    <div modalFooter>
+      <button class="btn btn-light" (click)="enrollOpen.set(false)">Cancel</button>
+      <button class="btn btn-primary" [disabled]="enrollForm.invalid" (click)="submitEnroll()">Enroll</button>
+    </div>
+  </tl-modal>
+} @else if (loading()) {
+  <tl-spinner block label="Loading study…" />
+} @else if (error()) {
+  <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+    <span>{{ error() }}</span>
+  </div>
 }

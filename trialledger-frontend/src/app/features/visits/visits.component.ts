@@ -20,11 +20,9 @@ import { ParticipantResponseDTO } from '../../core/models/participant.models';
 import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
-import {
-  SearchSelectComponent,
-  SearchOption,
-} from '../../shared/search-select/search-select.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { NotificationService } from '../../core/services/notification.service';
+import { UserService } from '../../core/services/user.service';
 
 @Component({
   selector: 'tl-visits',
@@ -35,11 +33,10 @@ import {
     DatePipe,
     StatusBadgeComponent,
     ModalComponent,
-    EmptyStateComponent,
-    SearchSelectComponent,
+    SpinnerComponent,
   ],
   templateUrl: './visits.component.html',
-  styleUrls: ['./visits.component.css'],
+
 })
 export class VisitsComponent implements OnInit {
   private api = inject(VisitService);
@@ -49,10 +46,12 @@ export class VisitsComponent implements OnInit {
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
+  private userApi = inject(UserService);
+  private notification = inject(NotificationService);
 
   statuses = ALL_VISIT_STATUSES;
   types = ALL_VISIT_TYPES;
-
+  isParticipant = computed(() => this.auth.hasRole('PARTICIPANT'));
   scope = signal<'participant' | 'study'>('participant');
   participantId = signal<number | null>(null);
   studyId = signal<number | null>(null);
@@ -60,6 +59,8 @@ export class VisitsComponent implements OnInit {
   list = signal<VisitResponseDto[]>([]);
   participants = signal<ParticipantResponseDTO[]>([]);
   studies = signal<StudyResponseDto[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
 
   // ── Modal open flags ──────────────────────────────────────────────────────
   schedOpen = signal(false);
@@ -86,22 +87,6 @@ export class VisitsComponent implements OnInit {
   canViewSource = computed(() => this.auth.can('SOURCE_VIEW'));
   canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
   canListStudy = computed(() => this.auth.can('STUDY_LIST'));
-
-  // ── Search-select options ─────────────────────────────────────────────────
-  participantOptions = computed<SearchOption[]>(() =>
-    this.participants().map((p) => ({
-      id: p.participantId,
-      label: p.name,
-      subtitle: `${p.externalId} · Study #${p.studyId}`,
-    })),
-  );
-  studyOptions = computed<SearchOption[]>(() =>
-    this.studies().map((s) => ({
-      id: s.studyId,
-      label: s.title,
-      subtitle: `${s.sponsor} · #${s.protocolNumber}`,
-    })),
-  );
 
   setParticipant(id: number | null) {
     this.form.patchValue({ participantId: id });
@@ -143,6 +128,19 @@ export class VisitsComponent implements OnInit {
       this.participantId.set(+pid);
       this.load();
     }
+    if (this.isParticipant() && this.auth.participant()) {
+      // this.userApi.get(this.auth.user()?.userId ?? 0).subscribe({
+      //   next: full => {
+      //     this.partApi.byPhone(this.auth..phone).subscribe({
+      //       next: p => {
+              this.scope.set('participant');
+              this.participantId.set(this.auth.participant()?.participantId ?? 0);
+              this.load();
+      //       }
+      //     });
+      //   }
+      // })
+    }
   }
 
   participantName(id: number) {
@@ -151,14 +149,23 @@ export class VisitsComponent implements OnInit {
 
   // ── Load list ─────────────────────────────────────────────────────────────
   load() {
+    this.error.set(null);
     if (this.scope() === 'participant' && this.participantId()) {
       // GET /api/visits/participant/{participantId}
+      this.loading.set(true);
       this.api
         .byParticipant(this.participantId()!)
-        .subscribe({ next: (v) => this.list.set(v ?? []) });
+        .subscribe({
+          next: (v) => { this.list.set(v ?? []); this.loading.set(false); },
+          error: (e) => { this.error.set(extractErrorMessage(e, 'Could not load visits.')); this.loading.set(false); },
+        });
     } else if (this.scope() === 'study' && this.studyId()) {
       // GET /api/visits/study/{studyId}
-      this.api.byStudy(this.studyId()!).subscribe({ next: (v) => this.list.set(v ?? []) });
+      this.loading.set(true);
+      this.api.byStudy(this.studyId()!).subscribe({
+        next: (v) => { this.list.set(v ?? []); this.loading.set(false); },
+        error: (e) => { this.error.set(extractErrorMessage(e, 'Could not load visits.')); this.loading.set(false); },
+      });
     }
   }
 
@@ -180,8 +187,8 @@ export class VisitsComponent implements OnInit {
         this.toast.success('Visit scheduled');
         this.schedOpen.set(false);
         this.load();
-      },
-      error: (e) => this.toast.error(extractErrorMessage(e, 'Failed to schedule')),
+        this.notification.refresh();
+      }
     });
   }
 
@@ -200,15 +207,14 @@ export class VisitsComponent implements OnInit {
 
     // GET /api/visits/{visitId}
     this.api.get(v.visitId).subscribe({
-      next: (detail) => this.visitDetail.set(detail),
-      error: (e) => this.toast.error(extractErrorMessage(e, 'Could not fetch visit details')),
+      next: (detail) => this.visitDetail.set(detail)
     });
 
     // GET /api/sourcedata/byVisit/{visitId}
     if (this.canViewSource()) {
       this.srcApi.byVisit(v.visitId).subscribe({
         next: (sd) => this.sourceData.set(sd ?? []),
-        error: () => {},
+        error: () => { },
       });
     }
   }
@@ -238,8 +244,7 @@ export class VisitsComponent implements OnInit {
           this.captureOpen.set(false);
           // refresh  GET /api/sourcedata/byVisit/{visitId}
           this.srcApi.byVisit(v.visitId).subscribe((sd) => this.sourceData.set(sd ?? []));
-        },
-        error: (e) => this.toast.error(extractErrorMessage(e, 'Capture failed')),
+        }
       });
   }
 
@@ -256,8 +261,7 @@ export class VisitsComponent implements OnInit {
         const url = URL.createObjectURL(blob);
         window.open(url, '_blank');
         setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      },
-      error: (e: unknown) => this.toast.error(extractErrorMessage(e, 'Could not open file')),
+      }
     });
   }
 
@@ -304,12 +308,12 @@ export class VisitsComponent implements OnInit {
         this.toast.success('Status updated');
         this.statusOpen.set(false);
         this.load();
+        this.notification.refresh();
         // keep detail panel in sync
         if (this.visitDetail()?.visitId === updated.visitId) {
           this.visitDetail.set(updated);
         }
-      },
-      error: (e) => this.toast.error(extractErrorMessage(e, 'Could not update status')),
+      }
     });
   }
 
@@ -322,8 +326,7 @@ export class VisitsComponent implements OnInit {
         this.toast.success('Visit cancelled');
         this.detailOpen.set(false);
         this.load();
-      },
-      error: (e) => this.toast.error(extractErrorMessage(e, 'Failed to cancel')),
+      }
     });
   }
 

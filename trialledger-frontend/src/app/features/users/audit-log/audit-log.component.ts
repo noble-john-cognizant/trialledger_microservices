@@ -2,22 +2,26 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, JsonPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { AuditService } from '../../../core/services/audit.service';
-import { AuditLogDTO } from '../../../core/models/audit.models';
-import { ToastService } from '../../../core/services/toast.service';
-import { EmptyStateComponent } from '../../../shared/empty-state/empty-state.component';
+import { AuditLogDTO, PageResponse } from '../../../core/models/audit.models';
+import { SpinnerComponent } from '../../../shared/spinner/spinner.component';
+import { extractErrorMessage } from '../../../core/utils/error-message';
 
 const PAGE_SIZE = 20;
 
+/**
+ * Server-paginated audit log. The backend returns a Spring Page<AuditLogDTO>
+ * envelope; we just bind the `content` array and re-fetch when the page
+ * number or filter changes. No client-side slicing or sorting.
+ */
 @Component({
   selector: 'tl-audit-log',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, JsonPipe, EmptyStateComponent],
+  imports: [CommonModule, FormsModule, DatePipe, JsonPipe, SpinnerComponent],
   templateUrl: './audit-log.component.html',
   styleUrls: ['./audit-log.component.css']
 })
 export class AuditLogComponent implements OnInit {
   private api = inject(AuditService);
-  private toast = inject(ToastService);
 
   mode = signal<'all' | 'action' | 'user' | 'range'>('all');
   actionFilter = signal('');
@@ -25,55 +29,62 @@ export class AuditLogComponent implements OnInit {
   from = signal('');
   to = signal('');
 
-  /** Full result set returned by the chosen endpoint */
-  all = signal<AuditLogDTO[]>([]);
-
-  /** Current page (0-indexed) */
-  page = signal(0);
+  /** The page envelope from the server. Reset on every fetch. */
+  page = signal<PageResponse<AuditLogDTO> | null>(null);
   pageSize = PAGE_SIZE;
 
-  totalPages = computed(() => Math.max(1, Math.ceil(this.all().length / this.pageSize)));
+  loading = signal(true);
+  error = signal<string | null>(null);
 
-  /** Items visible on the current page */
-  pageItems = computed(() => {
-    const start = this.page() * this.pageSize;
-    return this.all().slice(start, start + this.pageSize);
-  });
+  items       = computed(() => this.page()?.content ?? []);
+  pageNumber  = computed(() => this.page()?.number ?? 0);
+  totalPages  = computed(() => this.page()?.totalPages ?? 0);
+  totalCount  = computed(() => this.page()?.totalElements ?? 0);
 
-  /** Page numbers to render (windowed if many pages) */
+  /** Page numbers to render (windowed when there are many). */
   pageNumbers = computed(() => {
     const tp = this.totalPages();
-    const cur = this.page();
+    const cur = this.pageNumber();
     if (tp <= 7) return Array.from({ length: tp }, (_, i) => i);
-    const window: number[] = [];
     const start = Math.max(0, Math.min(cur - 2, tp - 5));
-    for (let i = start; i < start + 5; i++) window.push(i);
-    return window;
+    return Array.from({ length: 5 }, (_, i) => start + i);
   });
 
-  ngOnInit() { this.run(); }
+  ngOnInit() { this.fetch(0); }
 
-  /** Reset to page 0 whenever the query changes */
-  run() {
-    this.page.set(0);
-    const m = this.mode();
-    const ok = (v: AuditLogDTO[]) => this.all.set(this.sortDesc(v ?? []));
-    const err = () => { this.all.set([]); this.toast.error('Failed to load audit log'); };
+  /** Reset to page 0 whenever the query changes. */
+  run() { this.fetch(0); }
 
-    if (m === 'all') this.api.list().subscribe({ next: ok, error: err });
-    else if (m === 'action' && this.actionFilter()) this.api.byAction(this.actionFilter()).subscribe({ next: ok, error: err });
-    else if (m === 'user' && this.userIdFilter()) this.api.byUser(this.userIdFilter()!).subscribe({ next: ok, error: err });
-    else if (m === 'range' && this.from() && this.to()) this.api.byRange(this.from(), this.to()).subscribe({ next: ok, error: err });
-  }
-
-  private sortDesc(items: AuditLogDTO[]): AuditLogDTO[] {
-    return [...items].sort((a, b) =>
-      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-    );
-  }
-
+  /** Pagination click — re-fetches that page from the server. */
   go(p: number) {
     if (p < 0 || p >= this.totalPages()) return;
-    this.page.set(p);
+    this.fetch(p);
+  }
+
+  load() { this.fetch(this.pageNumber()); }
+
+  private fetch(p: number) {
+    this.loading.set(true);
+    this.error.set(null);
+
+    const ok = (res: PageResponse<AuditLogDTO>) => { this.page.set(res); this.loading.set(false); };
+    const err = (e: unknown) => {
+      this.page.set(null);
+      this.error.set(extractErrorMessage(e, 'Could not load audit log.'));
+      this.loading.set(false);
+    };
+
+    const m = this.mode();
+    if (m === 'all') {
+      this.api.list(p, this.pageSize).subscribe({ next: ok, error: err });
+    } else if (m === 'action' && this.actionFilter()) {
+      this.api.byAction(this.actionFilter(), p, this.pageSize).subscribe({ next: ok, error: err });
+    } else if (m === 'user' && this.userIdFilter()) {
+      this.api.byUser(this.userIdFilter()!, p, this.pageSize).subscribe({ next: ok, error: err });
+    } else if (m === 'range' && this.from() && this.to()) {
+      this.api.byRange(this.from(), this.to(), p, this.pageSize).subscribe({ next: ok, error: err });
+    } else {
+      this.loading.set(false);
+    }
   }
 }

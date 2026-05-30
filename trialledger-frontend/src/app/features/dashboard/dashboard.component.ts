@@ -13,12 +13,12 @@ import {
   AdverseEventResponseDto, KPIResponseDTO, NotificationResponseDTO
 } from '../../core/models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
-import { ParticipantHomeComponent } from '../participant-home/participant-home.component';
+import { ParticipantDashboardComponent } from '../participants/participant-dashboard/participant-dashboard.component';
 
 @Component({
   selector: 'tl-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterLink, DatePipe, StatusBadgeComponent, ParticipantHomeComponent],
+  imports: [CommonModule, RouterLink, DatePipe, StatusBadgeComponent, ParticipantDashboardComponent],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
@@ -49,7 +49,7 @@ export class DashboardComponent implements OnInit {
   canReports = computed(() => this.auth.can('REPORT_VIEW'));
 
   ngOnInit() {
-    // PARTICIPANT role uses the participant-home view, skip global data loading.
+    // PARTICIPANT role uses the participant-dashboard view, skip global data loading.
     if (this.isParticipant()) return;
 
     if (this.canStudies())      this.studyApi.list().subscribe({ next: v => this.studies.set(v ?? []), error: () => {} });

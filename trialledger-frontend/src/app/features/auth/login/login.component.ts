@@ -12,7 +12,7 @@ import { ToastsComponent } from '../../../shared/toasts/toasts.component';
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink, ToastsComponent],
   templateUrl: './login.component.html',
-  styleUrls: ['./login.component.css', '../auth-shared.css']
+  styleUrls: ['../auth-shared.css']
 })
 export class LoginComponent {
   private auth = inject(AuthService);
@@ -37,7 +37,7 @@ export class LoginComponent {
       },
       error: err => {
         this.loading.set(false);
-        this.toast.error(extractErrorMessage(err, 'Invalid credentials'));
+        // this.toast.error(extractErrorMessage(err, 'Invalid credentials'));
       }
     });
   }

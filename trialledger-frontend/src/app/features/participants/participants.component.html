@@ -1,13 +1,13 @@
 <div class="d-flex justify-content-between align-items-start flex-wrap gap-3 mb-4">
   <div>
     <h2 class="fw-bold mb-1">Participants</h2>
-    <p class="text-muted mb-0">Enrollment roster across all studies.</p>
+    <p class="text-muted mb-0">
+      Enrollment roster across all studies.
+      @if (canCreate()) {
+        <span class="ms-1">To enroll, open a study and click <strong>Enroll</strong>.</span>
+      }
+    </p>
   </div>
-  @if (canCreate()) {
-    <button class="btn btn-primary" (click)="openCreate()">
-      <i class="bi bi-plus-lg me-1"></i> Enroll participant
-    </button>
-  }
 </div>
 
 <div class="card mb-3">
@@ -34,9 +34,21 @@
 
 <div class="card">
   <div class="card-body p-0">
-    @if (filtered().length === 0) {
+    @if (loading()) {
+      <tl-spinner block label="Loading participants…" />
+    } @else if (error()) {
+      <div class="p-3">
+        <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+          <span>{{ error() }}</span>
+          <button class="btn btn-sm btn-outline-danger" (click)="load()">Retry</button>
+        </div>
+      </div>
+    } @else if (filtered().length === 0) {
       <div class="p-4">
-        <tl-empty icon="bi-people" title="No participants" description="Enroll your first participant to get started." />
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No participants</div>
+          <div class="small">Open a study and click Enroll to add the first participant.</div>
+        </div>
       </div>
     } @else {
       <div class="table-responsive">
@@ -106,52 +118,3 @@
   </div>
 </div>
 
-<tl-modal [open]="open()" title="Enroll participant" (close)="open.set(false)">
-  <form [formGroup]="form" class="row g-3">
-    <div class="col-12">
-      <label class="form-label">Study</label>
-      <tl-search-select
-        [items]="studyOptions()"
-        [value]="form.controls.studyId.value"
-        [canList]="canListStudy()"
-        [idPlaceholder]="'Enter study ID'"
-        (valueChange)="setStudyId($event)" />
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">External ID</label>
-      <input class="form-control" formControlName="externalId" placeholder="e.g. P-2026-001">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Full name</label>
-      <input class="form-control" formControlName="name">
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Email <span class="text-danger">*</span></label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="bi bi-envelope"></i></span>
-        <input type="email" class="form-control" formControlName="email" placeholder="participant@example.com">
-      </div>
-      @if (form.controls.email.invalid && form.controls.email.touched) {
-        <small class="text-danger">Valid email required</small>
-      }
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Phone <small class="text-danger">*</small></label>
-      <div class="input-group">
-        <span class="input-group-text"><i class="bi bi-telephone"></i></span>
-        <input type="number" class="form-control" formControlName="phone">
-      </div>
-      @if (form.controls.phone.invalid && form.controls.phone.touched) {
-        <small class="text-danger">Valid phone number required</small>
-      }
-    </div>
-    <div class="col-md-6">
-      <label class="form-label">Date of birth</label>
-      <input type="date" class="form-control" formControlName="dob">
-    </div>
-  </form>
-  <div modalFooter>
-    <button class="btn btn-light" (click)="open.set(false)">Cancel</button>
-    <button class="btn btn-primary" [disabled]="form.invalid" (click)="submit()">Enroll</button>
-  </div>
-</tl-modal>

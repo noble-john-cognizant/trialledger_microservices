@@ -30,27 +30,17 @@
 
   <main class="main">
     <header class="topbar">
-      <tl-global-search />
-
-      <div class="top-actions ms-auto d-flex align-items-center gap-2">
-        <!-- Light / dark / system theme cycler -->
-        <button class="icon-btn" type="button" (click)="theme.cycle()"
-                [title]="'Theme: ' + theme.mode() + ' (click to change)'">
-          @switch (theme.mode()) {
-            @case ('light')  { <i class="bi bi-sun-fill"></i> }
-            @case ('dark')   { <i class="bi bi-moon-stars-fill"></i> }
-            @default         { <i class="bi bi-circle-half"></i> }
-          }
-        </button>
-
-        <a routerLink="/notifications" class="icon-btn position-relative" title="Notifications">
-          <i class="bi bi-bell"></i>
-          @if (unreadCount() > 0) {
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-              {{ unreadCount() }}
-            </span>
-          }
-        </a>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        @if (!isParticipant()) {
+          <a routerLink="/notifications" class="icon-btn position-relative" title="Notifications">
+            <i class="bi bi-bell"></i>
+            @if (unreadCount() > 0) {
+              <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                {{ unreadCount() }}
+              </span>
+            }
+          </a>
+        }
 
         <button class="user-chip" (click)="profileOpen.set(true)" title="My account">
           <div class="avatar">{{ initials() }}</div>
@@ -58,7 +48,6 @@
             <div class="name">{{ user()?.name }}</div>
             <div class="role">{{ user()?.role }}</div>
           </div>
-          <i class="bi bi-person-circle ms-1"></i>
         </button>
       </div>
     </header>

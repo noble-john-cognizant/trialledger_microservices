@@ -6,11 +6,10 @@ import { ToastService } from '../services/toast.service';
 import { extractErrorMessage } from '../utils/error-message';
 
 /**
- * Adds the Bearer JWT header and globally surfaces session/connectivity
- * errors. 4xx errors are NOT toasted here — calling components show their
- * own contextual message via `extractErrorMessage(err)` so the user sees the
- * exact reason ("Email already exists", "Phone already enrolled", ...) rather
- * than a generic "Bad request".
+ * Attaches the JWT to every outgoing request and shows a single friendly
+ * toast for any API failure. Components never need to handle error
+ * messaging themselves — they just call toast.success() on a successful
+ * mutation.
  */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
@@ -22,13 +21,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(cloned).pipe(
     catchError((err: HttpErrorResponse) => {
-      if (err.status === 401) {
-        toast.error(extractErrorMessage(err, 'Session expired — please sign in again.'));
-        auth.logout();
-      } else if (err.status === 0) {
-        toast.error('Cannot reach the API gateway. Check your connection.');
-      }
-      // Let the component toast contextual errors for 4xx/5xx itself.
+      toast.error(extractErrorMessage(err));
+      if (err.status === 401) auth.logout();
       return throwError(() => err);
     })
   );

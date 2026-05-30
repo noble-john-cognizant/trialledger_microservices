@@ -16,14 +16,14 @@ import { ParticipantResponseDTO } from '../../core/models/participant.models';
 import { StudyResponseDto } from '../../core/models/study.models';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
 import { ModalComponent } from '../../shared/modal/modal.component';
-import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
-import { SearchSelectComponent, SearchOption } from '../../shared/search-select/search-select.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
+import { NotificationService } from '../../core/services/notification.service';
 
 @Component({
   selector: 'tl-samples',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, DatePipe,
-    StatusBadgeComponent, ModalComponent, EmptyStateComponent, SearchSelectComponent],
+    StatusBadgeComponent, ModalComponent, SpinnerComponent],
   templateUrl: './samples.component.html',
   styleUrls: ['./samples.component.css']
 })
@@ -34,6 +34,7 @@ export class SamplesComponent implements OnInit {
   private toast = inject(ToastService);
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
+private notification = inject(NotificationService);
 
   statuses = ALL_SAMPLE_STATUSES;
   types = ALL_SAMPLE_TYPES;
@@ -41,6 +42,8 @@ export class SamplesComponent implements OnInit {
   list = signal<SampleResponseDTO[]>([]);
   participants = signal<ParticipantResponseDTO[]>([]);
   studies = signal<StudyResponseDto[]>([]);
+  loading = signal(true);
+  error = signal<string | null>(null);
 
   search = signal('');
   statusFilter = signal('');
@@ -67,19 +70,6 @@ export class SamplesComponent implements OnInit {
   canViewAssay = computed(() => this.auth.can('ASSAY_VIEW'));
   canListParticipants = computed(() => this.auth.can('PARTICIPANT_LIST'));
   canListStudy = computed(() => this.auth.can('STUDY_LIST'));
-
-  participantOptions = computed<SearchOption[]>(() =>
-    this.participants().map(p => ({
-      id: p.participantId, label: p.name,
-      subtitle: `${p.externalId} · Study #${p.studyId}`
-    }))
-  );
-  studyOptions = computed<SearchOption[]>(() =>
-    this.studies().map(s => ({
-      id: s.studyId, label: s.title,
-      subtitle: `${s.sponsor} · #${s.protocolNumber}`
-    }))
-  );
 
   /** Validator: toUser must not equal fromUser (case-insensitive). */
   private notSameUser(): ValidatorFn {
@@ -109,8 +99,7 @@ export class SamplesComponent implements OnInit {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
         this.toast.success('Download started');
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Result file could not be downloaded.'))
+      }
     });
   }
 
@@ -160,7 +149,14 @@ export class SamplesComponent implements OnInit {
     if (this.canListStudy()) this.studyApi.list().subscribe(v => this.studies.set(v ?? []));
   }
 
-  load() { this.api.list().subscribe({ next: v => this.list.set(v ?? []) }); }
+  load() {
+    this.loading.set(true);
+    this.error.set(null);
+    this.api.list().subscribe({
+      next: v => { this.list.set(v ?? []); this.loading.set(false); },
+      error: e => { this.error.set(extractErrorMessage(e, 'Could not load samples.')); this.loading.set(false); }
+    });
+  }
 
   openCreate() {
     this.form.reset({
@@ -175,8 +171,10 @@ export class SamplesComponent implements OnInit {
     if (this.form.invalid) return;
     // Let the backend validate participant and study — errors shown via toast
     this.api.create(this.form.getRawValue() as any).subscribe({
-      next: () => { this.toast.success('Sample logged'); this.createOpen.set(false); this.load(); },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed to log sample'))
+      next: () => { this.toast.success('Sample logged');
+         this.createOpen.set(false);
+          this.load();
+        this.notification.refresh(); }
     });
   }
 
@@ -188,9 +186,8 @@ export class SamplesComponent implements OnInit {
         this.load();
         if (this.selected()?.sampleId === s.sampleId) this.selected.set(updated);
       },
-      error: e => {
+      error: () => {
         selectEl.value = s.status;
-        this.toast.error(extractErrorMessage(e, 'Status update failed'));
       }
     });
   }
@@ -224,10 +221,11 @@ export class SamplesComponent implements OnInit {
       fromUser: this.transferForm.controls.fromUser.value
     }).subscribe({
       next: () => {
-        this.toast.success('Custody transferred'); this.transferOpen.set(false);
+        this.toast.success('Custody transferred');
+         this.transferOpen.set(false);
         this.api.custodyForSample(s.sampleId).subscribe(v => this.custody.set(v ?? []));
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+        this.notification.refresh();
+      }
     });
   }
 
@@ -241,8 +239,7 @@ export class SamplesComponent implements OnInit {
       next: () => {
         this.toast.success('Stored'); this.storeOpen.set(false);
         this.api.storageHistory(s.sampleId).subscribe(v => this.storage.set(v ?? []));
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+      }
     });
   }
 
@@ -259,8 +256,7 @@ export class SamplesComponent implements OnInit {
       next: () => {
         this.toast.success('Assay logged'); this.assayOpen.set(false);
         this.api.assaysForSample(s.sampleId).subscribe(v => this.assays.set(v ?? []));
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Failed'))
+      }
     });
   }
 }

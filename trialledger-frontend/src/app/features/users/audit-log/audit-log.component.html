@@ -15,7 +15,7 @@
     </select>
 
     @if (mode() === 'action') {
-      <input class="form-control" style="max-width:240px" placeholder="e.g. LOGIN, CREATE_STUDY" [(ngModel)]="actionFilter">
+      <input class="form-control" style="max-width:240px" placeholder="e.g. GET, POST" [(ngModel)]="actionFilter">
       <button class="btn btn-primary" (click)="run()">Search</button>
     }
     @if (mode() === 'user') {
@@ -29,16 +29,30 @@
     }
 
     <span class="ms-auto small text-muted">
-      Showing {{ pageItems().length }} of {{ all().length }} entries
+      Showing {{ items().length }} of {{ totalCount() }} entries
     </span>
   </div>
 </div>
 
 <div class="card">
   <div class="card-body p-0">
-    @if (all().length === 0) {
+    @if (loading()) {
       <div class="p-4">
-        <tl-empty icon="bi-clipboard-data" title="No audit entries" description="Adjust filters or perform an action to see logs." />
+        <tl-spinner block label="Loading audit log…" />
+      </div>
+    } @else if (error()) {
+      <div class="p-4">
+        <div class="alert alert-danger d-flex justify-content-between align-items-center mb-0">
+          <span>{{ error() }}</span>
+          <button class="btn btn-sm btn-outline-danger" (click)="load()">Retry</button>
+        </div>
+      </div>
+    } @else if (items().length === 0) {
+      <div class="p-4">
+        <div class="text-center text-muted py-4">
+          <div class="fw-semibold mb-1">No audit entries</div>
+          <div class="small">Adjust filters or perform an action to see logs.</div>
+        </div>
       </div>
     } @else {
       <div class="table-responsive">
@@ -49,7 +63,7 @@
             </tr>
           </thead>
           <tbody>
-            @for (e of pageItems(); track e.auditId) {
+            @for (e of items(); track e.auditId) {
               <tr>
                 <td class="mono"><small class="text-muted">#{{ e.auditId }}</small></td>
                 <td><small class="text-muted">{{ e.timestamp | date:'medium' }}</small></td>
@@ -68,32 +82,26 @@
         </table>
       </div>
 
-      <nav class="d-flex justify-content-center py-3 border-top" aria-label="Audit pagination">
-        <ul class="pagination pagination-sm mb-0">
-          <li class="page-item" [class.disabled]="page() === 0">
-            <button class="page-link" (click)="go(0)" title="First">«</button>
-          </li>
-          <li class="page-item" [class.disabled]="page() === 0">
-            <button class="page-link" (click)="go(page() - 1)">‹ Prev</button>
-          </li>
-
-          @for (p of pageNumbers(); track p) {
-            <li class="page-item" [class.active]="p === page()">
-              <button class="page-link" (click)="go(p)">{{ p + 1 }}</button>
+      @if (totalPages() > 1) {
+        <nav class="d-flex justify-content-center py-3 border-top" aria-label="Audit pagination">
+          <ul class="pagination pagination-sm mb-0">
+            <li class="page-item" [class.disabled]="pageNumber() === 0">
+              <button class="page-link" (click)="go(pageNumber() - 1)">‹ Prev</button>
             </li>
-          }
-
-          <li class="page-item" [class.disabled]="page() + 1 >= totalPages()">
-            <button class="page-link" (click)="go(page() + 1)">Next ›</button>
-          </li>
-          <li class="page-item" [class.disabled]="page() + 1 >= totalPages()">
-            <button class="page-link" (click)="go(totalPages() - 1)" title="Last">»</button>
-          </li>
-        </ul>
-      </nav>
-      <div class="text-center pb-3">
-        <small class="text-muted">Page {{ page() + 1 }} of {{ totalPages() }}</small>
-      </div>
+            @for (p of pageNumbers(); track p) {
+              <li class="page-item" [class.active]="p === pageNumber()">
+                <button class="page-link" (click)="go(p)">{{ p + 1 }}</button>
+              </li>
+            }
+            <li class="page-item" [class.disabled]="pageNumber() + 1 >= totalPages()">
+              <button class="page-link" (click)="go(pageNumber() + 1)">Next ›</button>
+            </li>
+          </ul>
+        </nav>
+        <div class="text-center pb-3">
+          <small class="text-muted">Page {{ pageNumber() + 1 }} of {{ totalPages() }}</small>
+        </div>
+      }
     }
   </div>
 </div>

@@ -4,16 +4,16 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth/auth.service';
 import { UserService } from '../../core/services/user.service';
 import { ToastService } from '../../core/services/toast.service';
-import { extractErrorMessage } from '../../core/utils/error-message';
 import { ModalComponent } from '../../shared/modal/modal.component';
 import { StatusBadgeComponent } from '../../shared/status-badge/status-badge.component';
+import { SpinnerComponent } from '../../shared/spinner/spinner.component';
 import { LoginResponseDTO } from '../../core/models/auth.models';
 import { UserDTO } from '../../core/models/user.models';
 
 @Component({
   selector: 'tl-user-profile',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, DatePipe, ModalComponent, StatusBadgeComponent],
+  imports: [CommonModule, ReactiveFormsModule, DatePipe, ModalComponent, StatusBadgeComponent, SpinnerComponent],
   templateUrl: './user-profile.component.html',
   styleUrls: ['./user-profile.component.css']
 })
@@ -95,8 +95,7 @@ export class UserProfileComponent implements OnChanges {
         this.toast.success('Profile updated');
         this.editing.set(false);
         this.loadFullProfile();
-      },
-      error: e => this.toast.error(extractErrorMessage(e, 'Update failed'))
+      }
     });
   }
 
